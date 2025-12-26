@@ -13,12 +13,8 @@ LAB_TASKS_METADATA = toml.load(os.path.join(LAB_TASKS_EXT_DIR, "config", "extens
 # Configure the module-level variables
 __version__ = LAB_TASKS_METADATA["package"]["version"]
 
-##
 # Register Gym environments.
-##
-
 from isaaclab_tasks.utils import import_packages
-
 # The blacklist is used to prevent importing configs from sub-packages
 _BLACKLIST_PKGS = ["utils"]
 # Import all configs in this package

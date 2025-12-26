@@ -5,7 +5,6 @@
 
 from __future__ import annotations
 
-import math
 from dataclasses import MISSING
 
 import isaaclab.sim as sim_utils
@@ -24,23 +23,12 @@ from isaaclab.terrains import TerrainImporterCfg
 from isaaclab.utils import configclass
 from isaaclab.utils.noise import AdditiveUniformNoiseCfg as Unoise
 from isaaclab.utils.noise import GaussianNoiseCfg as Gnoise
-
 import lab.cocelo.tasks.manager_based.locomotion.velocity.mdp as mdp
-##
-# Pre-defined configs
-##
 from lab.cocelo.tasks.manager_based.locomotion.velocity.terrain_config.stair_config import ROUGH_TERRAINS_CFG
-
-##
-# Scene definition
-##
-
 
 @configclass
 class MySceneCfg(InteractiveSceneCfg):
     """Configuration for the terrain scene with a legged robot."""
-
-    # ground terrain
     terrain = TerrainImporterCfg(
         prim_path="/World/ground",
         terrain_type="generator",
@@ -59,9 +47,9 @@ class MySceneCfg(InteractiveSceneCfg):
         ),
         debug_vis=False,
     )
-    # robots
+    #! ****************** Robots *************** !#
     robot: ArticulationCfg = MISSING
-    # sensors
+    #! ****************** Sensors ************** !#
     height_scanner = RayCasterCfg(
         prim_path="{ENV_REGEX_NS}/Robot/base_link",
         offset=RayCasterCfg.OffsetCfg(pos=(0.0, 0.0, 20.0)),
@@ -79,47 +67,39 @@ class MySceneCfg(InteractiveSceneCfg):
         mesh_prim_paths=["/World/ground"],
     )
     contact_forces = ContactSensorCfg(prim_path="{ENV_REGEX_NS}/Robot/.*", history_length=3, track_air_time=True)
-    # lights
+    #! ****************** Lights ************** !#
     light = AssetBaseCfg(
         prim_path="/World/light",
         spawn=sim_utils.DistantLightCfg(
             color=(0.75, 0.75, 0.75), intensity=4000.0
-        ),  # Warmer color with higher intensity
+        ), 
     )
-
     sky_light = AssetBaseCfg(
         prim_path="/World/skyLight",
         spawn=sim_utils.DomeLightCfg(
             color=(0.53, 0.81, 0.98), intensity=1500.0
-        ),  # Sky blue color with increased intensity
+        ),  
     )
-
-
-##
-# MDP settings
-##
-
 
 @configclass
 class CommandsCfg:
     """Command specifications for the MDP."""
-
-    base_velocity = mdp.UniformVelocityCommandCfg(
+    base_velocity = mdp.UniformVelocityWithZCommandCfg(
         asset_name="robot",
         resampling_time_range=(6.0, 8.0),
+        rel_standing_envs=0.01,
         rel_heading_envs=0.0,
         heading_command=False,
         debug_vis=True,
-        ranges=mdp.UniformVelocityCommandCfg.Ranges(
-            lin_vel_x=(-1.0, 1.0), lin_vel_y=(-0.0, 0.0), ang_vel_z=(-2.0, 2.0)
+        ranges=mdp.UniformVelocityWithZCommandCfg.Ranges(
+            lin_vel_x=(-1.0, 1.0), lin_vel_y=(-0.0, 0.0), ang_vel_z=(-2.0, 2.0), pos_z=(0.0, 0.34205)
         ),
+        initial_phase_time=2.0,
     )
-
 
 @configclass
 class ActionsCfg:
     """Action specifications for the MDP."""
-
     joint_pos = mdp.JointPositionActionCfg(
         asset_name="robot",
         joint_names=["left_shoulder_joint", "right_shoulder_joint"],
@@ -135,16 +115,12 @@ class ActionsCfg:
         preserve_order=True
     )
 
-
 @configclass
 class ObservationsCfg:
     """Observation specifications for the MDP."""
-
     @configclass
     class StackCriticCfg(ObsGroup):
-        """Observations for critic group."""
-
-        # observation terms (order preserved)  
+        """Observations for critic group to be stacked."""
         joint_pos = ObsTerm(
             func=mdp.joint_pos,
             params={
@@ -159,10 +135,8 @@ class ObservationsCfg:
             },
         )
         base_ang_vel = ObsTerm(func=mdp.base_ang_vel_link, scale=0.25)  # default: -0.15
-        # base_euler = ObsTerm(func=mdp.base_euler_angle_link)
         base_projected_gravity = ObsTerm(func=mdp.projected_gravity)  # default: -0.05
         actions = ObsTerm(func=mdp.last_action)
-
         def __post_init__(self):
             self.enable_corruption = False
             self.concatenate_terms = True
@@ -170,21 +144,10 @@ class ObservationsCfg:
     @configclass
     class NoneStackCriticCfg(ObsGroup):
         velocity_commands = ObsTerm(func=mdp.generated_scaled_commands, params={"command_name": "base_velocity", "scale": (2.0, 0.0, 0.25)})
-        roll_pitch_commands = ObsTerm(func=mdp.generated_commands, params={"command_name": "roll_pitch"})
-        event_commands = ObsTerm(func=mdp.generated_commands, params={"command_name": "yk_jump_command"})
-
-        height_scan = ObsTerm(
-            func=mdp.height_scan,
-            params={"sensor_cfg": SceneEntityCfg("height_scanner"), 'offset': 0.0},
-            clip=(-1.0, 1.0),
-        )
-        
         base_lin_vel_x = ObsTerm(func=mdp.base_lin_vel_x_link, scale=2.0)
         base_lin_vel_y = ObsTerm(func=mdp.base_lin_vel_y_link)
         base_lin_vel_z = ObsTerm(func=mdp.base_lin_vel_z_link, scale=0.25)
         base_pos_z = ObsTerm(func=mdp.base_pos_z_rel_link, params={"sensor_cfg": SceneEntityCfg("base_height_scanner")})
-        current_reward = ObsTerm(func=mdp.current_reward)
-
         def __post_init__(self):
             self.enable_corruption = False
             self.concatenate_terms = True
@@ -208,7 +171,6 @@ class ObservationsCfg:
             scale=0.15,
         )
         base_ang_vel = ObsTerm(func=mdp.base_ang_vel_link, noise=Unoise(n_min=-0.15, n_max=0.15), scale=0.25)  # default: -0.15
-        # base_euler = ObsTerm(func=mdp.base_euler_angle_link, noise=Unoise(n_min=-0.125, n_max=0.125))  # default: -0.125
         base_projected_gravity = ObsTerm(func=mdp.projected_gravity, noise=Unoise(n_min=-0.05, n_max=0.05))  # default: -0.05
         actions = ObsTerm(func=mdp.last_action)
 
@@ -216,19 +178,10 @@ class ObservationsCfg:
             self.enable_corruption = True
             self.concatenate_terms = True
 
-
     @configclass
     class NoneStackPolicyCfg(ObsGroup):
         """Observations for None-Stack policy group."""
         velocity_commands = ObsTerm(func=mdp.generated_scaled_commands, params={"command_name": "base_velocity", "scale": (2.0, 0.0, 0.25)})
-        roll_pitch_commands = ObsTerm(func=mdp.generated_commands, params={"command_name": "roll_pitch"})
-        event_commands = ObsTerm(func=mdp.generated_commands, params={"command_name": "yk_jump_command"})
-        height_scan = ObsTerm(
-            func=mdp.height_scan,
-            params={"sensor_cfg": SceneEntityCfg("height_scanner"), 'offset': 0.0},
-            clip=(-1.0, 1.0),
-            noise=Unoise(n_min=-0.1, n_max=0.1),
-        )
 
         def __post_init__(self):
             self.enable_corruption = True
@@ -243,8 +196,6 @@ class ObservationsCfg:
 @configclass
 class EventCfg:
     """Configuration for events."""
-
-    # startup
     physics_material = EventTerm(
         func=mdp.randomize_rigid_body_material,
         mode="startup",
@@ -256,7 +207,6 @@ class EventCfg:
             "num_buckets": 64,
         },
     )
-
     physics_material_caster = EventTerm(
         func=mdp.randomize_rigid_body_material,
         mode="startup",
@@ -268,17 +218,15 @@ class EventCfg:
             "num_buckets": 1,
         },
     )
-
     randomize_com_positions = EventTerm(
         func=mdp.randomize_com_positions,
         mode="startup",
         params={
             "asset_cfg": SceneEntityCfg("robot", body_names="base_link"),
-            "com_distribution_params": (-0.02, 0.05),
+            "com_distribution_params": (-0.02, 0.02),
             "operation": "add",
         },
     )
-
     add_base_mass = EventTerm(
         func=mdp.randomize_rigid_body_mass,
         mode="startup",
@@ -288,7 +236,6 @@ class EventCfg:
             "operation": "add",
         },
     )
-
     reset_base = EventTerm(
         func=mdp.reset_root_state_uniform,
         mode="reset",
@@ -304,7 +251,6 @@ class EventCfg:
             },
         },
     )
-
     reset_robot_joints = EventTerm(
         func=mdp.reset_joints_by_offset,
         mode="reset",
@@ -313,8 +259,6 @@ class EventCfg:
             "velocity_range": (0.0, 0.0),
         },
     )
-
-    # interval
     push_robot = EventTerm(
         func=mdp.push_by_setting_velocity,
         mode="interval",
@@ -324,11 +268,9 @@ class EventCfg:
         },
     )
 
-
 @configclass
 class TerminationsCfg:
     """Termination terms for the MDP."""
-
     time_out = DoneTerm(func=mdp.time_out, time_out=True)
     base_contact = DoneTerm(
         func=mdp.illegal_contact,
@@ -341,68 +283,44 @@ class TerminationsCfg:
             "time_threshold": 0.01
             },
     )
-
     terrain_out_of_bounds = DoneTerm(
         func=mdp.terrain_out_of_bounds,
         params={"asset_cfg": SceneEntityCfg("robot"), "distance_buffer": 3.0},
         time_out=True,
     )
 
-
 @configclass
 class CurriculumCfg:
     """Curriculum terms for the MDP."""
-
     terrain_levels = CurrTerm(func=mdp.terrain_levels_vel)
-
-
-##
-# Environment configuration
-##
-
 
 @configclass
 class LocomotionVelocityRoughEnvCfg(ManagerBasedRLEnvCfg):
     """Configuration for the locomotion velocity-tracking environment."""
-
-    # Scene settings
     scene: MySceneCfg = MySceneCfg(num_envs=4096, env_spacing=2.5)
-    # Basic settings
     observations: ObservationsCfg = ObservationsCfg()
     actions: ActionsCfg = ActionsCfg()
     commands: CommandsCfg = CommandsCfg()
-    # MDP settings
-    rewards = None # It will be defined in the task
+    rewards = MISSING # It will be defined in the task
     terminations: TerminationsCfg = TerminationsCfg()
     events: EventCfg = EventCfg()
     curriculum: CurriculumCfg = CurriculumCfg()
 
     def __post_init__(self):
         """Post initialization."""
-        # general settings
         self.decimation = 4
         self.episode_length_s = 20.0
-        # simulation settings
         self.sim.dt = 0.005
         self.sim.disable_contact_processing = True
         self.sim.physics_material = self.scene.terrain.physics_material
 
-        # # change terrain to flat
-        # self.scene.terrain.terrain_type = "plane"
-        # self.scene.terrain.terrain_generator = None
-
-        # # Terrain curriculum
-        # self.curriculum.terrain_levels = None
-
         # update sensor update periods
-        # we tick all the sensors based on the smallest update period (physics update period)
         if self. scene.height_scanner is not None:
             self.scene.height_scanner.update_period = self.decimation * self.sim.dt
         if self.scene.contact_forces is not None:
             self.scene.contact_forces.update_period = self.sim.dt
 
         # check if terrain levels curriculum is enabled - if so, enable curriculum for terrain generator
-        # this generates terrains with increasing difficulty and is useful for training
         if getattr(self.curriculum, "terrain_levels", None) is not None:
             if self.scene.terrain.terrain_generator is not None:
                 self.scene.terrain.terrain_generator.curriculum = True
@@ -414,14 +332,10 @@ class LocomotionVelocityRoughEnvCfg(ManagerBasedRLEnvCfg):
 @configclass
 class LocomotionVelocityFlatEnvCfg(ManagerBasedRLEnvCfg):
     """Configuration for the locomotion velocity-tracking environment."""
-
-    # Scene settings
     scene: MySceneCfg = MySceneCfg(num_envs=4096, env_spacing=2.5)
-    # Basic settings
     observations: ObservationsCfg = ObservationsCfg()
     actions: ActionsCfg = ActionsCfg()
     commands: CommandsCfg = CommandsCfg()
-    # MDP settings
     rewards = None # It will be defined in the task
     terminations: TerminationsCfg = TerminationsCfg()
     events: EventCfg = EventCfg()
@@ -429,30 +343,24 @@ class LocomotionVelocityFlatEnvCfg(ManagerBasedRLEnvCfg):
 
     def __post_init__(self):
         """Post initialization."""
-        # general settings
         self.decimation = 4
         self.episode_length_s = 20.0
-        # simulation settings
         self.sim.dt = 0.005
         self.sim.disable_contact_processing = True
         self.sim.physics_material = self.scene.terrain.physics_material
         
-        # change terrain to flat
         self.scene.terrain.terrain_type = "plane"
         self.scene.terrain.terrain_generator = None
 
-        # Terrain curriculum
         self.curriculum.terrain_levels = None
 
         # update sensor update periods
-        # we tick all the sensors based on the smallest update period (physics update period)
         if self. scene.height_scanner is not None:
             self.scene.height_scanner.update_period = self.decimation * self.sim.dt
         if self.scene.contact_forces is not None:
             self.scene.contact_forces.update_period = self.sim.dt
 
         # check if terrain levels curriculum is enabled - if so, enable curriculum for terrain generator
-        # this generates terrains with increasing difficulty and is useful for training
         if getattr(self.curriculum, "terrain_levels", None) is not None:
             if self.scene.terrain.terrain_generator is not None:
                 self.scene.terrain.terrain_generator.curriculum = True

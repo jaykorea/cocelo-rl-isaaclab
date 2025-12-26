@@ -12,8 +12,7 @@ from isaaclab.terrains import FlatPatchSamplingCfg
 
 ROUGH_TERRAINS_CFG = TerrainGeneratorCfg(
     seed=42,
-    # 계단의 갯수는 size 와 step_width, platform_width 로 부터 결정 가능하다.
-    size=(10.0, 10.0), # (9.75.9.75)
+    size=(10.0, 10.0),
     border_width=7.5,
     num_rows=20,
     num_cols=10,
@@ -23,9 +22,8 @@ ROUGH_TERRAINS_CFG = TerrainGeneratorCfg(
     slope_threshold=0.5,
     difficulty_range=(0.05, 0.9),
     use_cache=True,
-    sub_terrains={ #  HfPyramidStairsTerrainCfg
+    sub_terrains={ 
         "hf_pyramid_stair_inv": terrain_gen.MeshInvertedPyramidStairsTerrainCfg(
-            # inverted=True,
             holes=False,
             proportion=0.9,
             step_height_range=(0.02, 0.13),

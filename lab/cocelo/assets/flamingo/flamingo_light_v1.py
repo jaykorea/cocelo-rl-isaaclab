@@ -9,11 +9,8 @@ import isaaclab.sim as sim_utils
 from isaaclab.actuators import (
     DelayedPDActuatorCfg,
 )
-
 from isaaclab.assets.articulation import ArticulationCfg
-
 from lab.cocelo.assets.flamingo import FLAMINGO_ASSETS_DATA_DIR
-
 
 FLAMINGO_LIGHT_CFG = ArticulationCfg(
     spawn=sim_utils.UsdFileCfg(

@@ -4,31 +4,24 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 from isaaclab.utils import configclass
-
-from scripts.co_rl.core.wrapper import (
-    CoRlPolicyRunnerCfg,
-    CoRlPpoActorCriticCfg,
-    CoRlPpoAlgorithmCfg,
-)
+from isaaclab_rl.rsl_rl import RslRlOnPolicyRunnerCfg, RslRlPpoActorCriticCfg, RslRlPpoAlgorithmCfg
 
 ######################################## [ PPO CONFIG] ########################################
-
-
 @configclass
-class FlamingoPPORunnerCfg(CoRlPolicyRunnerCfg):
+class FlamingoPPORunnerCfg(RslRlOnPolicyRunnerCfg):
     num_steps_per_env = 24
     max_iterations = 1500
     save_interval = 100
     experiment_name = "FlamingoLightStand-v0"
     experiment_description = "test"
     empirical_normalization = False
-    policy = CoRlPpoActorCriticCfg(
+    policy = RslRlPpoActorCriticCfg(
         init_noise_std=1.0,
         actor_hidden_dims=[512, 256, 128],
         critic_hidden_dims=[512, 256, 128],
         activation="elu",
     )
-    algorithm = CoRlPpoAlgorithmCfg(
+    algorithm = RslRlPpoAlgorithmCfg(
         value_loss_coef=1.0,
         use_clipped_value_loss=True,
         clip_param=0.2,
@@ -42,7 +35,6 @@ class FlamingoPPORunnerCfg(CoRlPolicyRunnerCfg):
         desired_kl=0.01,
         max_grad_norm=1.0,
     )
-
 
 @configclass
 class FlamingoLightFlatPPORunnerCfg_Stand_Drive(FlamingoPPORunnerCfg):
