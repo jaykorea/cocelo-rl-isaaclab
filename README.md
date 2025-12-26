@@ -1,4 +1,4 @@
-# Isaac LAB for Flamingo
+# Isaac LAB for Flamingo Light
 
 [![IsaacSim](https://img.shields.io/badge/IsaacSim-4.5-silver.svg)](https://docs.omniverse.nvidia.com/isaacsim/latest/overview.html)
 [![IsaacLab](https://img.shields.io/badge/Lab-2.0.0-silver)](https://isaac-orbit.github.io/orbit/)
@@ -8,11 +8,8 @@
 [![License](https://img.shields.io/badge/license-MIT-yellow.svg)](https://opensource.org/license/mit)
 
 ## **✨ New Features - Updated 🚀**
-✔️ **Flamingo rev.0.1.4**: Latest version of Flamingo added.  
-✔️ **Flamingo Edu v1**: Flamingo Edu version added.  
+✔️ **Flamingo Light v1**: Flamingo Light version added.  
 ✔️ **Stack Environment**: Observations can be stacked with arguments.  
-✔️ **Constraint Manager**: [Constraints as Termination (CaT)](https://arxiv.org/abs/2403.18765) method implementation added.  
-✔️ **CoRL**: Based on [rsl_rl](https://github.com/leggedrobotics/rsl_rl) library, off-policy algorithms are implemented on `off_policy_runner`.  
 
 ## Sim2Real - ZeroShot Transfer
 <table>
