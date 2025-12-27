@@ -52,7 +52,7 @@ class FlamingoRewardsCfg():
         func=mdp.base_height_adaptive_l2,
         weight=-25.0,
         params={
-            "target_height": 0.34205,
+            "target_height": 0.33152,
             "asset_cfg": SceneEntityCfg("robot", body_names="base_link"),
         },
     )
@@ -142,8 +142,6 @@ class FlamingoFlatEnvCfg(LocomotionVelocityFlatEnvCfg):
         self.commands.base_velocity.ranges.lin_vel_x = (-1.0, 1.0)
         self.commands.base_velocity.ranges.lin_vel_y = (0.0, 0.0)
         self.commands.base_velocity.ranges.ang_vel_z = (-2.5, 2.5)
-        self.commands.base_velocity.ranges.pos_z = (0.0, 0.31)
-
         #! ****************** Terminations setup *********** !#
         self.terminations.base_contact.params["sensor_cfg"].body_names = [
             "base_link",

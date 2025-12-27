@@ -51,6 +51,7 @@ class UniformVelocityWithZCommand(UniformVelocityCommand):
         """Return a string representation of the command generator with position z."""
         msg = super().__str__()
         msg += f"\n\tPosition z range: {self.cfg.ranges.pos_z}"
+        msg += f"\n\tPosition z num categories: {self.cfg.pos_z_num_categories}"
         return msg
 
     @property
@@ -75,7 +76,7 @@ class UniformVelocityWithZCommand(UniformVelocityCommand):
         self.vel_command_b[env_ids, 2] = r.uniform_(*self.cfg.ranges.ang_vel_z)
 
         if self.track_z_flag:
-            self.vel_command_b[env_ids, 3] = self.gcd(env_ids, 5)
+            self.vel_command_b[env_ids, 3] = self.gcd(env_ids, self.cfg.pos_z_num_categories)
         else:
             self.vel_command_b[env_ids, 3] = 0.0
         if self.cfg.heading_command:
@@ -96,7 +97,9 @@ class UniformVelocityWithZCommand(UniformVelocityCommand):
         if len(initial_phase_env_ids) > 0:
             self.vel_command_b[initial_phase_env_ids, :3] = 0.0
             if self.track_z_flag:
-                self.vel_command_b[initial_phase_env_ids, 3] = self.gcd(initial_phase_env_ids, 5)
+                self.vel_command_b[initial_phase_env_ids, 3] = self.gcd(
+                    initial_phase_env_ids, self.cfg.pos_z_num_categories
+                )
             else:
                 self.vel_command_b[initial_phase_env_ids, 3] = 0.0
 
@@ -155,3 +158,6 @@ class UniformVelocityWithZCommandCfg(UniformVelocityCommandCfg):
 
     initial_phase_time: float = 2.0
     """Time for which the initial phase lasts."""
+    
+    pos_z_num_categories: int = 2
+    """Number of categories for the position z command."""
