@@ -31,7 +31,7 @@ FLAMINGO_LIGHT_CFG = ArticulationCfg(
     ),
     
     init_state=ArticulationCfg.InitialStateCfg(
-        pos=(0.0, 0.0, 0.2), # default: 0.135
+        pos=(0.0, 0.0, 0.135), # default: 0.135
         joint_pos={
             "left_shoulder_joint": -0.05,
             "left_wheel_joint": 0.0,
@@ -44,8 +44,8 @@ FLAMINGO_LIGHT_CFG = ArticulationCfg(
     actuators={
         "joints": DelayedPDActuatorCfg(
             joint_names_expr=[".*_shoulder_joint"],
-            effort_limit=17.0,
-            velocity_limit=40.0,
+            effort_limit=36.0,
+            velocity_limit=53.0,
             min_delay=0,  # physics time steps (min: 5.0 * 0 = 0.0ms)
             max_delay=4,  # physics time steps (max: 5.0 * 4 = 20.0ms)
             stiffness={
