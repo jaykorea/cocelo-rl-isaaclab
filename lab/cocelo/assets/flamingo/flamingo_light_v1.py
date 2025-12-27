@@ -31,7 +31,7 @@ FLAMINGO_LIGHT_CFG = ArticulationCfg(
     ),
     
     init_state=ArticulationCfg.InitialStateCfg(
-        pos=(0.0, 0.0, 0.135), # default: 0.135
+        pos=(0.0, 0.0, 0.2), # default: 0.135
         joint_pos={
             "left_shoulder_joint": -0.05,
             "left_wheel_joint": 0.0,
