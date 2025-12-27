@@ -142,8 +142,6 @@ class FlamingoFlatEnvCfg(LocomotionVelocityFlatEnvCfg):
         self.commands.base_velocity.ranges.lin_vel_x = (-1.0, 1.0)
         self.commands.base_velocity.ranges.lin_vel_y = (0.0, 0.0)
         self.commands.base_velocity.ranges.ang_vel_z = (-2.5, 2.5)
-        self.commands.base_velocity.ranges.pos_z = (0.0, 0.31)
-
         #! ****************** Terminations setup *********** !#
         self.terminations.base_contact.params["sensor_cfg"].body_names = [
             "base_link",
