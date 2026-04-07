@@ -9,12 +9,15 @@ import isaaclab.sim as sim_utils
 from isaaclab.actuators import (
     DelayedPDActuatorCfg,
 )
+from lab.cocelo.tasks.manager_based.locomotion.velocity.actuators.actuator_cfg import (
+    GearDelayedPDActuatorCfg,
+)
 from isaaclab.assets.articulation import ArticulationCfg
 from lab.cocelo.assets.flamingo import FLAMINGO_ASSETS_DATA_DIR
 
-FLAMINGO_LIGHT_CFG = ArticulationCfg(
+FLAMINGO_CFG = ArticulationCfg(
     spawn=sim_utils.UsdFileCfg(
-        usd_path=f"{FLAMINGO_ASSETS_DATA_DIR}/Robots/Flamingo/flamingo_light_v01_2_2/assets/flamingo_light_v01_2_1_merge_joints.usd",
+        usd_path=f"{FLAMINGO_ASSETS_DATA_DIR}/Robots/Flamingo/flamingo_rev03_2_1/flamingo_rev03_2_1_merge_joints.usd",
         activate_contact_sensors=True,
         rigid_props=sim_utils.RigidBodyPropertiesCfg(
             disable_gravity=False,
@@ -26,51 +29,80 @@ FLAMINGO_LIGHT_CFG = ArticulationCfg(
             max_depenetration_velocity=1.0,
         ),
         articulation_props=sim_utils.ArticulationRootPropertiesCfg(
-            enabled_self_collisions=False, solver_position_iteration_count=4, solver_velocity_iteration_count=1
+            enabled_self_collisions=False, solver_position_iteration_count=4, solver_velocity_iteration_count=0
         ),
     ),
     
     init_state=ArticulationCfg.InitialStateCfg(
-        pos=(0.0, 0.0, 0.2), # default: 0.135
-        joint_pos={
-            "left_shoulder_joint": -0.05,
+        pos=(0.0, 0.0, 0.615),  # default: 0.61282
+        joint_pos={ 
+            "left_hip_joint": 0.0,
+            "left_shoulder_joint": 0.0,
+            "left_leg_joint": -0.0,
             "left_wheel_joint": 0.0,
-            "right_shoulder_joint": -0.05,
+            "right_hip_joint": 0.0,
+            "right_shoulder_joint": 0.0,
+            "right_leg_joint": -0.0,
             "right_wheel_joint": 0.0,
         },
         joint_vel={".*": 0.0},
     ),
     soft_joint_pos_limit_factor=0.8,
     actuators={
-        "joints": DelayedPDActuatorCfg(
-            joint_names_expr=[".*_shoulder_joint"],
-            effort_limit=36.0,
-            velocity_limit=53.0,
+        "joints_nl": DelayedPDActuatorCfg(
+            joint_names_expr=[".*_hip_joint", ".*_shoulder_joint"],
+            effort_limit=60.0,
+            velocity_limit=20.0,
             min_delay=0,  # physics time steps (min: 5.0 * 0 = 0.0ms)
             max_delay=4,  # physics time steps (max: 5.0 * 4 = 20.0ms)
             stiffness={
-                ".*_shoulder_joint": 35.0,
+                ".*_hip_joint": 70.0,
+                ".*_shoulder_joint": 70.0,
             },
             damping={
-                ".*_shoulder_joint": 0.45,
+                ".*_hip_joint": 1.0,
+                ".*_shoulder_joint": 1.0,
             },
             friction={
+                ".*_hip_joint": 0.0,
                 ".*_shoulder_joint": 0.0,
             },
             armature={
+                ".*_hip_joint": 0.01,
                 ".*_shoulder_joint": 0.01,
+            },
+        ),
+        "joints_l": GearDelayedPDActuatorCfg(
+            joint_names_expr=[".*_leg_joint"],
+            effort_limit=90.0,
+            velocity_limit=13.0,
+            gear_ratio=-1.5,
+            gamma=1.0,
+            min_delay=0,  # physics time steps (min: 5.0 * 0 = 0.0ms)
+            max_delay=4,  # physics time steps (max: 5.0 * 4 = 20.0ms)
+            stiffness={
+                ".*_leg_joint": 70.0,
+            },
+            damping={
+                ".*_leg_joint": 1.0,
+            },
+            friction={
+                ".*_leg_joint": 0.0,
+            },
+            armature={
+                ".*_leg_joint": 0.01,
             },
         ),
         "wheels": DelayedPDActuatorCfg(
             joint_names_expr=[".*_wheel_joint"],
-            effort_limit=17.0,
-            velocity_limit=40.0,
+            effort_limit=36.0,
+            velocity_limit=50.0,
             min_delay=0,  # physics time steps (min: 5.0 * 0 = 0.0ms)
             max_delay=4,  # physics time steps (max: 5.0 * 4 = 20.0ms)
             stiffness={
                 ".*_wheel_joint": 0.0,
             },
-            damping={".*_wheel_joint": 0.3},
+            damping={".*_wheel_joint": 0.7},
             friction={
                 ".*_wheel_joint": 0.0,
             },

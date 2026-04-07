@@ -8,9 +8,15 @@
 """Launch Isaac Sim Simulator first."""
 
 import argparse
+import os
 import sys
 
 from isaaclab.app import AppLauncher
+
+# Ensure repo-local packages such as `lab.cocelo` are importable when this script is run directly.
+REPO_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
+if REPO_ROOT not in sys.path:
+    sys.path.insert(0, REPO_ROOT)
 
 # local imports
 import cli_args  # isort: skip
@@ -87,7 +93,7 @@ from isaaclab.envs import (
     multi_agent_to_single_agent,
 )
 from isaaclab.utils.dict import print_dict
-from isaaclab.utils.io import dump_pickle, dump_yaml
+from isaaclab.utils.io import dump_yaml
 
 from isaaclab_rl.rsl_rl import RslRlOnPolicyRunnerCfg
 from wrapper.vecenv_wrapper import RslRlVecEnvWrapperWithStateHandler
@@ -99,7 +105,9 @@ from isaaclab_tasks.utils.hydra import hydra_task_config
 # PLACEHOLDER: Extension template (do not remove this comment)
 
 # Import extensions to set up environment tasks
-import lab.cocelo.tasks  # noqa: F401  TODO: import orbit.<your_extension_name>
+import lab.cocelo.tasks
+import lab.cocelo.tasks.manager_based.locomotion.velocity.flamingo_light_env  # noqa: F401  TODO: import orbit.<your_extension_name>
+import lab.cocelo.tasks.manager_based.locomotion.velocity.flamingo_pro_env
 
 torch.backends.cuda.matmul.allow_tf32 = True
 torch.backends.cudnn.allow_tf32 = True
@@ -186,8 +194,6 @@ def main(env_cfg: ManagerBasedRLEnvCfg | DirectRLEnvCfg | DirectMARLEnvCfg, agen
     # dump the configuration into log-directory
     dump_yaml(os.path.join(log_dir, "params", "env.yaml"), env_cfg)
     dump_yaml(os.path.join(log_dir, "params", "agent.yaml"), agent_cfg)
-    dump_pickle(os.path.join(log_dir, "params", "env.pkl"), env_cfg)
-    dump_pickle(os.path.join(log_dir, "params", "agent.pkl"), agent_cfg)
 
     # run training
     runner.learn(num_learning_iterations=agent_cfg.max_iterations, init_at_random_ep_len=True)

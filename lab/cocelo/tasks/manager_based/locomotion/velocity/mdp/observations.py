@@ -111,39 +111,6 @@ def is_contact_time(env: ManagerBasedRLEnv, sensor_cfg: SceneEntityCfg) -> torch
 
     return contact_time
 
-def lift_mask_by_height_scan(
-    env: ManagerBasedRLEnv,
-    sensor_cfg_left: SceneEntityCfg,
-    sensor_cfg_right: SceneEntityCfg,
-    command_name: str = "base_velocity",
-) -> torch.Tensor:
-    
-    """
-    Generate a lift mask for the robot's legs based on row-wise height scan gradients from separate left and right sensors.
-
-    Args:
-        env (ManagerBasedRLEnv): Simulation environment.
-        sensor_cfg_left (SceneEntityCfg): Configuration for the left raycast sensor.
-        sensor_cfg_right (SceneEntityCfg): Configuration for the right raycast sensor.
-        command_name (str): Command name to check movement intention.
-        gradient_threshold (float): Threshold for row-wise height gradient to detect steps.
-
-    Returns:
-        torch.Tensor: Lift mask for left and right legs. Shape: [num_envs, 2].
-    """
-    #* Step 1: Extract ray hit positions (Z coordinates) from left and right sensors
-    left_lift_mask_sensor = env.scene.sensors[sensor_cfg_left.name]
-    right_lift_mask_sensor = env.scene.sensors[sensor_cfg_right.name]
-
-    left_mask= left_lift_mask_sensor.data.mask 
-    right_mask = right_lift_mask_sensor.data.mask  
-    
-    lift_mask = torch.stack([left_mask, right_mask], dim=1) 
-
-    command_norm = torch.norm(env.command_manager.get_command(command_name)[:, :3], dim=1)  # Shape: [num_envs]
-    lift_mask *= (command_norm > 0.1).unsqueeze(-1).float()  # Apply movement condition
-
-    return lift_mask
 
 def joint_acc(env: ManagerBasedRLEnv, asset_cfg: SceneEntityCfg = SceneEntityCfg("robot")) -> torch.Tensor:
     """Penalize joint accelerations on the articulation using L2 squared kernel.

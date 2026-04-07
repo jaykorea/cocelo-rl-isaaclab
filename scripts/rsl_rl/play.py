@@ -8,8 +8,15 @@
 """Launch Isaac Sim Simulator first."""
 
 import argparse
+import os
+import sys
 
 from isaaclab.app import AppLauncher
+
+# Ensure repo-local packages such as `lab.cocelo` are importable when this script is run directly.
+REPO_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
+if REPO_ROOT not in sys.path:
+    sys.path.insert(0, REPO_ROOT)
 
 # local imports
 import cli_args  # isort: skip
@@ -49,7 +56,6 @@ simulation_app = app_launcher.app
 """Rest everything follows."""
 
 import gymnasium as gym
-import os
 import time
 import torch
 
@@ -70,6 +76,8 @@ from isaaclab_tasks.utils import get_checkpoint_path, parse_env_cfg
 
 # Import extensions to set up environment tasks
 import lab.cocelo.tasks  # noqa: F401
+import lab.cocelo.tasks.manager_based.locomotion.velocity.flamingo_light_env  # noqa: F401
+import lab.cocelo.tasks.manager_based.locomotion.velocity.flamingo_pro_env  # noqa: F401
 
 def main():
     """Play with RSL-RL agent."""
