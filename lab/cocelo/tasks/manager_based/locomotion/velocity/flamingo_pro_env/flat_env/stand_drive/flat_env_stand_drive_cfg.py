@@ -123,8 +123,6 @@ class FlamingoFlatEnvCfg(LocomotionVelocityFlatEnvCfg):
        #! ************** scene & observations setup - 0 *********** !#
         self.scene.height_scanner = None
         self.scene.base_height_scanner = None
-        self.scene.left_wheel_height_scanner = None
-        self.scene.right_wheel_height_scanner = None
 
         self.observations.none_stack_critic.height_scan = None
         self.observations.none_stack_critic.base_height_scan = None
