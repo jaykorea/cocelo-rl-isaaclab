@@ -64,7 +64,7 @@ def get_humanoid_light_joint_motor_type(joint_name: str) -> str:
 
 HUMANOID_LIGHT_CFG = ArticulationCfg(
     spawn=sim_utils.UsdFileCfg(
-        usd_path=f"{FLAMINGO_ASSETS_DATA_DIR}/Robots/Flamingo/humanoid_light_rev_1_0_9_45/humanoid_light_rev_1_0_9_45.usd",
+        usd_path=f"{FLAMINGO_ASSETS_DATA_DIR}/Robots/Flamingo/humanoid_light_rev_1_0_10_45/humanoid_light_rev_1_0_10_45.usd",
         activate_contact_sensors=True,
         rigid_props=sim_utils.RigidBodyPropertiesCfg(
             disable_gravity=False,
