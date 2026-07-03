@@ -78,11 +78,6 @@ class FlamingoRewardsCfg():
     )
     action_rate_l2 = RewTerm(func=mdp.action_rate_l2, weight=-0.01) 
     termination_penalty = RewTerm(func=mdp.is_terminated, weight=-200.0)
-    time_conditioned_penalty = RewTerm(
-        func=mdp.is_terminated_term,
-        weight=-1000.0,
-        params={"term_keys": "time_illegal_contact"},
-    )
     is_alive = RewTerm(mdp.is_alive, weight=0.1)
     track_base_height = RewTerm(
         func=mdp.track_pos_z_exp,
