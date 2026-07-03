@@ -207,17 +207,7 @@ class EventCfg:
             "num_buckets": 64,
         },
     )
-    physics_material_caster = EventTerm(
-        func=mdp.randomize_rigid_body_material,
-        mode="startup",
-        params={
-            "asset_cfg": SceneEntityCfg("robot", body_names=["FL_caster_link", "FR_caster_link", "RL_caster_link", "RR_caster_link"]),
-            "static_friction_range": (0.0, 0.0),
-            "dynamic_friction_range": (0.0, 0.0),
-            "restitution_range": (0.0, 0.0),
-            "num_buckets": 1,
-        },
-    )
+
     randomize_com_positions = EventTerm(
         func=mdp.randomize_com_positions,
         mode="startup",
@@ -275,13 +265,6 @@ class TerminationsCfg:
     base_contact = DoneTerm(
         func=mdp.illegal_contact,
         params={"sensor_cfg": SceneEntityCfg("contact_forces", body_names="base"), "threshold": 1.0},
-    )
-    time_illegal_contact = DoneTerm(
-        func=mdp.time_illegal_contact,
-        params={
-            "sensor_cfg": SceneEntityCfg("contact_forces", body_names=["FL_caster_link", "FR_caster_link", "RL_caster_link", "RR_caster_link"]),
-            "time_threshold": 0.01
-            },
     )
     terrain_out_of_bounds = DoneTerm(
         func=mdp.terrain_out_of_bounds,

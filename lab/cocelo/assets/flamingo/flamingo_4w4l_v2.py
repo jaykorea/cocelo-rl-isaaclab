@@ -19,7 +19,7 @@ from lab.cocelo.assets.flamingo import FLAMINGO_ASSETS_DATA_DIR
 
 FLAMINGO4W4L_CFG = ArticulationCfg(
     spawn=sim_utils.UsdFileCfg(
-        usd_path=f"{FLAMINGO_ASSETS_DATA_DIR}/Robots/Flamingo/flamingo_4w4l_rev_02_0_4/flamingo_4w4l_rev_02_0_4_merge_joints.usd",
+        usd_path=f"{FLAMINGO_ASSETS_DATA_DIR}/Robots/Flamingo/flamingo_4w4l_rev_02_0_4/assets/flamingo_4w4l_rev_02_0_4_merge_joints.usd",
         activate_contact_sensors=True,
         rigid_props=sim_utils.RigidBodyPropertiesCfg(
             disable_gravity=False,

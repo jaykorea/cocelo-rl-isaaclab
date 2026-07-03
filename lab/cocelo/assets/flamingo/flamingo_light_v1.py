@@ -14,7 +14,7 @@ from lab.cocelo.assets.flamingo import FLAMINGO_ASSETS_DATA_DIR
 
 FLAMINGO_LIGHT_CFG = ArticulationCfg(
     spawn=sim_utils.UsdFileCfg(
-        usd_path=f"{FLAMINGO_ASSETS_DATA_DIR}/Robots/Flamingo/flamingo_light_v01_2_2/assets/flamingo_light_v01_2_1_merge_joints.usd",
+        usd_path=f"{FLAMINGO_ASSETS_DATA_DIR}/Robots/Flamingo/flamingo_light_v01_2_2/assets/flamingo_light_v01_2_2_merge_joints.usd",
         activate_contact_sensors=True,
         rigid_props=sim_utils.RigidBodyPropertiesCfg(
             disable_gravity=False,
@@ -33,9 +33,9 @@ FLAMINGO_LIGHT_CFG = ArticulationCfg(
     init_state=ArticulationCfg.InitialStateCfg(
         pos=(0.0, 0.0, 0.2), # default: 0.135
         joint_pos={
-            "left_shoulder_joint": -0.05,
+            "left_shoulder_joint": 0.0,
             "left_wheel_joint": 0.0,
-            "right_shoulder_joint": -0.05,
+            "right_shoulder_joint": 0.0,
             "right_wheel_joint": 0.0,
         },
         joint_vel={".*": 0.0},
