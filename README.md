@@ -49,7 +49,7 @@ ii. install lab.cocelo pip package by running below command
 iii. Unzip assets(usd asset) on folder
    - Since git does not correctly upload '.usd' file, you should manually unzip the usd files on assests folder
    ```
-    path example: lab/flamingo/assets/data/Robots/Flamingo/flamingo_rev01_4_1/
+    path example: lab/cocelo/assets/data/Robots/Flamingo/flamingo_light_v01_2_2/assets.zip
    ```
 
 ## Launch script
@@ -58,41 +58,41 @@ iii. Unzip assets(usd asset) on folder
 ### Train
 #### Flamingo Light
   ```
-    python scripts/rsl_rl/train.py --task Isaac-Velocity-Flat-Flamingo-Light-v1 --algo ppo --num_envs 4096 --headless --num_policy_stacks 2 --num_critic_stacks 2
+    python scripts/rsl_rl/train.py --task Isaac-Velocity-Flat-Flamingo-Light-v1 --num_envs 4096 --headless --num_policy_stacks 2 --num_critic_stacks 2
   ```
 
 #### Flamingo Pro
   ```
-    python scripts/rsl_rl/train.py --task Isaac-Velocity-Flat-Flamingo-Pro-v3 --algo ppo --num_envs 4096 --headless --num_policy_stacks 2 --num_critic_stacks 2
+    python scripts/rsl_rl/train.py --task Isaac-Velocity-Flat-Flamingo-Pro-v3 --num_envs 4096 --headless --num_policy_stacks 2 --num_critic_stacks 2
   ```
 
 #### Flamingo 4W4L
   ```
-    python scripts/rsl_rl/train.py --task Isaac-Velocity-Flat-Flamingo4w4l-v1 --algo ppo --num_envs 4096 --headless --num_policy_stacks 2 --num_critic_stacks 2
+    python scripts/rsl_rl/train.py --task Isaac-Velocity-Flat-Flamingo4w4l-v1 --num_envs 4096 --headless --num_policy_stacks 2 --num_critic_stacks 2
   ```
 
 #### Humanoid Light
   ```
-    python scripts/rsl_rl/train.py --task Isaac-Velocity-Flat-Humanoid-Light-v1 --algo ppo --num_envs 4096 --headless --num_policy_stacks 2 --num_critic_stacks 2
+    python scripts/rsl_rl/train.py --task Isaac-Velocity-Flat-Humanoid-Light-v1 --num_envs 4096 --headless --num_policy_stacks 2 --num_critic_stacks 2
   ```
 
 ### Play
 #### Flamingo Light
   ```
-    python scripts/rsl_rl/play.py --task Isaac-Velocity-Flat-Flamingo-Light-Play-v1 --algo ppo --num_envs 64 --num_policy_stacks 2 --num_critic_stacks 2 --load_run {folder name} --plot False
+    python scripts/rsl_rl/play.py --task Isaac-Velocity-Flat-Flamingo-Light-Play-v1 --num_envs 64 --num_policy_stacks 2 --num_critic_stacks 2 --load_run {folder name}
   ```
 
 #### Flamingo Pro
   ```
-    python scripts/rsl_rl/play.py --task Isaac-Velocity-Flat-Flamingo-Pro-Play-v3 --algo ppo --num_envs 64 --num_policy_stacks 2 --num_critic_stacks 2 --load_run {folder name} --plot False
+    python scripts/rsl_rl/play.py --task Isaac-Velocity-Flat-Flamingo-Pro-Play-v3 --num_envs 64 --num_policy_stacks 2 --num_critic_stacks 2 --load_run {folder name}
   ```
 
 #### Flamingo 4W4L
   ```
-    python scripts/rsl_rl/play.py --task Isaac-Velocity-Flat-Flamingo4w4l-v1-Play --algo ppo --num_envs 64 --num_policy_stacks 2 --num_critic_stacks 2 --load_run {folder name} --plot False
+    python scripts/rsl_rl/play.py --task Isaac-Velocity-Flat-Flamingo4w4l-v1-Play --num_envs 64 --num_policy_stacks 2 --num_critic_stacks 2 --load_run {folder name}
   ```
 
 #### Humanoid Light
   ```
-    python scripts/rsl_rl/play.py --task Isaac-Velocity-Flat-Humanoid-Light-v1-Play --algo ppo --num_envs 64 --num_policy_stacks 2 --num_critic_stacks 2 --load_run {folder name} --plot False
+    python scripts/rsl_rl/play.py --task Isaac-Velocity-Flat-Humanoid-Light-v1-Play --num_envs 64 --num_policy_stacks 2 --num_critic_stacks 2 --load_run {folder name}
   ```
