@@ -103,7 +103,7 @@ class ActionsCfg:
     joint_pos = mdp.JointPositionActionCfg(
         asset_name="robot",
         joint_names=["left_shoulder_joint", "right_shoulder_joint"],
-        scale=1.0,
+        scale=0.25,
         use_default_offset=False,
         preserve_order=True,
     )
@@ -271,6 +271,15 @@ class TerminationsCfg:
         params={"asset_cfg": SceneEntityCfg("robot"), "distance_buffer": 3.0},
         time_out=True,
     )
+    shoulder_lower_violation = DoneTerm(
+        func=mdp.specific_joint_lower_limit_termination,
+        params={
+            "asset_cfg": SceneEntityCfg("robot"),
+            "joint_names": ["left_shoulder_joint", "right_shoulder_joint"],
+            "threshold": -0.75,
+        },
+    )
+    bad_orientation = DoneTerm(func=mdp.bad_orientation, params={"limit_angle": 0.5})
 
 @configclass
 class CurriculumCfg:

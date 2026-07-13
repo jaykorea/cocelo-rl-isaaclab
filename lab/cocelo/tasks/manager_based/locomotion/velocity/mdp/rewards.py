@@ -494,6 +494,13 @@ def joint_soft_pos_limits(
     ).clip(min=0.0)
     return torch.sum(out_of_limits, dim=1)
 
+def joint_deviation_zero_shoulder_l1(env: ManagerBasedRLEnv, asset_cfg: SceneEntityCfg = SceneEntityCfg("robot")) -> torch.Tensor:
+    """Penalize joint positions that deviate from the default one."""
+    # extract the used quantities (to enable type-hinting)
+    asset: Articulation = env.scene[asset_cfg.name]
+    # compute out of limits constraints
+    angle = asset.data.joint_pos[:, asset_cfg.joint_ids] + 0.6
+    return torch.sum(torch.abs(angle), dim=1)
 
 def action_smoothness_hard(env: ManagerBasedRLEnv) -> torch.Tensor:
     """Penalize the actions using smoothing term."""
