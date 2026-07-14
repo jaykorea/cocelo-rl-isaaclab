@@ -6,22 +6,13 @@
 from __future__ import annotations
 
 import isaaclab.sim as sim_utils
-from isaaclab.actuators import (
-    DelayedPDActuatorCfg,
-)
+from isaaclab.actuators import DelayedPDActuatorCfg
+
 from isaaclab.assets.articulation import ArticulationCfg
-from isaaclab.utils import configclass
 
 from lab.cocelo.assets.flamingo import FLAMINGO_ASSETS_DATA_DIR
+from lab.cocelo.tasks.manager_based.locomotion.velocity.actuators.actuator_cfg import CoupledDelayedPDActuatorCfg
 
-
-@configclass
-class CoupledDelayedPDActuatorCfg(DelayedPDActuatorCfg):
-    """Delayed PD actuator config that keeps coupled-gear metadata for sim-to-sim exports."""
-
-    gear_ratio_1: float = 1.0
-    gear_ratio_2: float = 1.0
-    gamma: float = 1.0
 
 
 ROBSTRIDE_MOTOR_SPECS = {

@@ -1,5 +1,6 @@
 from .actuator_cfg import (
-    GearDelayedPDActuatorCfg
+    GearDelayedPDActuatorCfg,
+    CoupledDelayedPDActuatorCfg,
 )
 
-from .gear_actuator import GearDelayedPDActuator
+from .gear_actuator import GearDelayedPDActuator, CoupledDelayedPDActuator

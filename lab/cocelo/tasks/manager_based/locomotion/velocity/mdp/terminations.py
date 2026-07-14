@@ -57,3 +57,45 @@ def time_illegal_contact(
     contact_time = contact_sensor.data.current_contact_time[:, sensor_cfg.body_ids]
 
     return torch.any(contact_time >= time_threshold, dim=1)
+
+
+def specific_joint_lower_limit_termination(
+    env: ManagerBasedRLEnv,
+    asset_cfg: SceneEntityCfg = SceneEntityCfg("robot"),
+    joint_names: list[str] | None = None,
+    threshold: float = -0.72,
+) -> torch.Tensor:
+    """Terminate when any specified joint goes below the given threshold."""
+    asset: RigidObject = env.scene[asset_cfg.name]
+
+    if joint_names is None:
+        joint_names = ["left_shoulder_joint", "right_shoulder_joint"]
+
+    # joint index 찾기
+    joint_ids = [asset.find_joints(name)[0][0] for name in joint_names]
+
+    # 해당 조인트 위치 추출
+    joint_pos = asset.data.joint_pos[:, joint_ids]
+
+    # 하나라도 threshold보다 작으면 terminate
+    return (joint_pos < threshold).any(dim=1)
+
+
+def joint_pos_limit_termination(
+    env: ManagerBasedRLEnv,
+    asset_cfg: SceneEntityCfg = SceneEntityCfg("robot"),
+    use_soft_limits: bool = False,
+    margin: float = 0.0,
+) -> torch.Tensor:
+    """Terminate when any selected joint position exceeds its configured limits."""
+    asset: Articulation = env.scene[asset_cfg.name]
+    if asset_cfg.joint_ids is None:
+        asset_cfg.joint_ids = slice(None)
+
+    joint_pos = asset.data.joint_pos[:, asset_cfg.joint_ids]
+    joint_pos_limits = asset.data.soft_joint_pos_limits if use_soft_limits else asset.data.joint_pos_limits
+    joint_pos_limits = joint_pos_limits[:, asset_cfg.joint_ids]
+
+    lower_limits = joint_pos_limits[..., 0] + margin
+    upper_limits = joint_pos_limits[..., 1] - margin
+    return torch.logical_or(joint_pos < lower_limits, joint_pos > upper_limits).any(dim=1)
