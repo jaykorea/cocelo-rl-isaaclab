@@ -103,7 +103,7 @@ class ActionsCfg:
     joint_pos = mdp.JointPositionActionCfg(
         asset_name="robot",
         joint_names=["left_shoulder_joint", "right_shoulder_joint"],
-        scale=0.25,
+        scale=1.0,
         use_default_offset=False,
         preserve_order=True,
     )
