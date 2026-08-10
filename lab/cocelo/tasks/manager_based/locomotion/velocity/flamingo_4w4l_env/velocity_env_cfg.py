@@ -25,13 +25,13 @@ from isaaclab.utils import configclass
 from isaaclab.utils.noise import AdditiveUniformNoiseCfg as Unoise
 from isaaclab.utils.noise import GaussianNoiseCfg as Gnoise
 
-from lab.cocelo.tasks.manager_based.locomotion.velocity.flamingo_4w4l_env import mdp_helpers
 import lab.cocelo.tasks.manager_based.locomotion.velocity.mdp as mdp
 
 ##
 # Pre-defined configs
 ##
 from lab.cocelo.tasks.manager_based.locomotion.velocity.terrain_config.rough_config import ROUGH_TERRAINS_CFG
+
 
 ##
 # Scene definition
@@ -265,7 +265,7 @@ class ObservationsCfg:
     class NoneStackCriticCfg(ObsGroup):
         velocity_commands = ObsTerm(func=mdp.generated_scaled_commands, params={"command_name": "base_velocity", "scale": (2.0, 1.0, 0.25)})
         height_scan = ObsTerm(
-            func=mdp_helpers.height_scan,
+            func=mdp.height_scan,
             params={"sensor_cfg": SceneEntityCfg("height_scanner"), 'offset': 0.0},
             clip=(-1.0, 1.0),
         )
@@ -273,7 +273,7 @@ class ObservationsCfg:
         robot_joint_torque = ObsTerm(func=mdp.joint_torques, scale=0.05)
         robot_joint_acc = ObsTerm(func=mdp.joint_acc, scale=0.0025)
         contact_forces = ObsTerm(
-            func=mdp_helpers.measure_contact_forces,
+            func=mdp.measure_contact_forces,
             scale=0.01,
             params={
                 "sensor_cfg": SceneEntityCfg(
@@ -388,7 +388,7 @@ class ObservationsCfg:
         """Observations for None-Stack policy group."""
         velocity_commands = ObsTerm(func=mdp.generated_scaled_commands, params={"command_name": "base_velocity", "scale": (2.0, 1.0, 0.25)})
         height_scan = ObsTerm(
-            func=mdp_helpers.height_scan,
+            func=mdp.height_scan,
             params={"sensor_cfg": SceneEntityCfg("height_scanner"), 'offset': 0.0},
             clip=(-1.0, 1.0),
             noise=Unoise(n_min=-0.1, n_max=0.1),

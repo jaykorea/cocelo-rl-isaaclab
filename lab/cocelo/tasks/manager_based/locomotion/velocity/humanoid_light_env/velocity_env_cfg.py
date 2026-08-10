@@ -23,8 +23,6 @@ from isaaclab.utils import configclass
 from isaaclab.utils.noise import AdditiveUniformNoiseCfg as Unoise
 
 import lab.cocelo.tasks.manager_based.locomotion.velocity.mdp as mdp
-from lab.cocelo.tasks.manager_based.locomotion.velocity.humanoid_light_env import mdp_helpers
-
 
 # -----------------------------------------------------------------------------
 # Sim-to-sim contract
@@ -189,28 +187,28 @@ class ObservationsCfg:
         #     noise=Unoise(n_min=-1.5, n_max=1.5),
         #     scale=0.15,
         # )
-        joint_pos = ObsTerm(func=mdp_helpers.coupled_joint_pos_motor_space, params=COUPLED_MOTOR_OBS_PARAMS, noise=Unoise(n_min=-0.05, n_max=0.05), scale=1.0)
-        joint_vel = ObsTerm(func=mdp_helpers.coupled_joint_vel_motor_space, params=COUPLED_MOTOR_OBS_PARAMS, noise=Unoise(n_min=-1.5, n_max=1.5), scale=0.15)
+        joint_pos = ObsTerm(func=mdp.coupled_joint_pos_motor_space, params=COUPLED_MOTOR_OBS_PARAMS, noise=Unoise(n_min=-0.05, n_max=0.05), scale=1.0)
+        joint_vel = ObsTerm(func=mdp.coupled_joint_vel_motor_space, params=COUPLED_MOTOR_OBS_PARAMS, noise=Unoise(n_min=-1.5, n_max=1.5), scale=0.15)
 
         lower_ang_vel = ObsTerm(
-            func=mdp_helpers.body_ang_vel_link,
+            func=mdp.body_ang_vel_link,
             params={"asset_cfg": SceneEntityCfg("robot", body_names="lower_imu")},
             noise=Unoise(n_min=-0.15, n_max=0.15),
             scale=0.25,
         )
         upper_ang_vel = ObsTerm(
-            func=mdp_helpers.body_ang_vel_link,
+            func=mdp.body_ang_vel_link,
             params={"asset_cfg": SceneEntityCfg("robot", body_names="upper_imu"),},
             noise=Unoise(n_min=-0.15, n_max=0.15),
             scale=0.25,
         )
         lower_projected_gravity = ObsTerm(
-            func=mdp_helpers.body_projected_gravity,
+            func=mdp.body_projected_gravity,
             params={"asset_cfg": SceneEntityCfg("robot", body_names="lower_imu")},
             noise=Unoise(n_min=-0.05, n_max=0.05)
         )
         upper_projected_gravity = ObsTerm(
-            func=mdp_helpers.body_projected_gravity,
+            func=mdp.body_projected_gravity,
             params={"asset_cfg": SceneEntityCfg("robot", body_names="upper_imu"),},
             noise=Unoise(n_min=-0.05, n_max=0.05)
         )
@@ -248,24 +246,24 @@ class ObservationsCfg:
         #     noise=Unoise(n_min=-1.5, n_max=1.5),
         #     scale=0.15,
         # )
-        joint_pos = ObsTerm(func=mdp_helpers.coupled_joint_pos_motor_space, params=COUPLED_MOTOR_OBS_PARAMS, scale=1.0)
-        joint_vel = ObsTerm(func=mdp_helpers.coupled_joint_vel_motor_space, params=COUPLED_MOTOR_OBS_PARAMS, scale=0.15)
+        joint_pos = ObsTerm(func=mdp.coupled_joint_pos_motor_space, params=COUPLED_MOTOR_OBS_PARAMS, scale=1.0)
+        joint_vel = ObsTerm(func=mdp.coupled_joint_vel_motor_space, params=COUPLED_MOTOR_OBS_PARAMS, scale=0.15)
         lower_ang_vel = ObsTerm(
-            func=mdp_helpers.body_ang_vel_link,
+            func=mdp.body_ang_vel_link,
             params={"asset_cfg": SceneEntityCfg("robot", body_names="lower_imu")},
             scale=0.25,
         )
         upper_ang_vel = ObsTerm(
-            func=mdp_helpers.body_ang_vel_link,
+            func=mdp.body_ang_vel_link,
             params={"asset_cfg": SceneEntityCfg("robot", body_names="upper_imu"),},
             scale=0.25,
         )
         lower_projected_gravity = ObsTerm(
-            func=mdp_helpers.body_projected_gravity,
+            func=mdp.body_projected_gravity,
             params={"asset_cfg": SceneEntityCfg("robot", body_names="lower_imu")},
         )
         upper_projected_gravity = ObsTerm(
-            func=mdp_helpers.body_projected_gravity,
+            func=mdp.body_projected_gravity,
             params={"asset_cfg": SceneEntityCfg("robot", body_names="upper_imu"),},
         )
         actions = ObsTerm(func=mdp.last_action)
@@ -293,21 +291,21 @@ class ObservationsCfg:
         joint_torque = ObsTerm(func=mdp.joint_torques, params={"asset_cfg": SIM2SIM_JOINTS_CFG}, scale=1.0)
         base_ang_vel = ObsTerm(func=mdp.base_ang_vel_link, scale=1.0)
         lower_ang_vel = ObsTerm(
-            func=mdp_helpers.body_ang_vel_link,
+            func=mdp.body_ang_vel_link,
             params={"asset_cfg": SceneEntityCfg("robot", body_names="lower_imu")},
             scale=0.25,
         )
         upper_ang_vel = ObsTerm(
-            func=mdp_helpers.body_ang_vel_link,
+            func=mdp.body_ang_vel_link,
             params={"asset_cfg": SceneEntityCfg("robot", body_names="upper_imu")},
             scale=0.25,
         )
         lower_projected_gravity = ObsTerm(
-            func=mdp_helpers.body_projected_gravity,
+            func=mdp.body_projected_gravity,
             params={"asset_cfg": SceneEntityCfg("robot", body_names="lower_imu")},
         )
         upper_projected_gravity = ObsTerm(
-            func=mdp_helpers.body_projected_gravity,
+            func=mdp.body_projected_gravity,
             params={"asset_cfg": SceneEntityCfg("robot", body_names="upper_imu")},
         )
         actions = ObsTerm(func=mdp.last_action)
