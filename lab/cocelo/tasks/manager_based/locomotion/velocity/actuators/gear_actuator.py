@@ -42,8 +42,8 @@ class CoupledDelayedPDActuator(DelayedPDActuator):
             m1 = -g1 * (roll + pitch)
             m2 = -g2 * (roll - pitch)
         torso:
-            m1 = g1 * (roll - pitch)
-            m2 = -g2 * (roll + pitch)
+            m1 = -g1 * (roll - pitch)
+            m2 = g2 * (roll + pitch)
 
     Torque mapping:
         tau_joint = J^T tau_motor
@@ -145,8 +145,8 @@ class CoupledDelayedPDActuator(DelayedPDActuator):
                     motor_1 = -self._g1 * (roll + pitch)
                     motor_2 = -self._g2 * (roll - pitch)
                 elif pair_name == "torso":
-                    motor_1 = self._g1 * (roll - pitch)
-                    motor_2 = -self._g2 * (roll + pitch)
+                    motor_1 = -self._g1 * (roll - pitch)
+                    motor_2 = self._g2 * (roll + pitch)
                 else:
                     raise RuntimeError(f"Unsupported coupled actuator pair: {pair_name}")
             else:
@@ -176,8 +176,8 @@ class CoupledDelayedPDActuator(DelayedPDActuator):
                     tau_pitch = -self._g1 * tau_m1 + self._g2 * tau_m2
                     tau_roll = -self._g1 * tau_m1 - self._g2 * tau_m2
                 elif pair_name == "torso":
-                    tau_pitch = -self._g1 * tau_m1 - self._g2 * tau_m2
-                    tau_roll = self._g1 * tau_m1 - self._g2 * tau_m2
+                    tau_pitch = self._g1 * tau_m1 + self._g2 * tau_m2
+                    tau_roll = -self._g1 * tau_m1 + self._g2 * tau_m2
                 else:
                     raise RuntimeError(f"Unsupported coupled actuator pair: {pair_name}")
             else:
