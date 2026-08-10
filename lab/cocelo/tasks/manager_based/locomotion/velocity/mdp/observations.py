@@ -220,7 +220,15 @@ def _replace_coupled_pairs_with_motor_values(
     joint_names: Sequence[str],
     coupled_pairs: Sequence[tuple[str, str, float, float, str]],
 ) -> torch.Tensor:
-    """Replace each coupled pitch/roll pair with its corresponding motor values."""
+    """Replace each coupled pitch/roll pair with its corresponding motor values.
+
+    The pitch and roll slots become motor 1 and motor 2 respectively.  The
+    mappings match :class:`CoupledDelayedPDActuator`:
+
+    - left ankle: ``(g1 * (roll - pitch), g2 * (roll + pitch))``
+    - right ankle: ``(g1 * (roll + pitch), g2 * (roll - pitch))``
+    - torso: ``(g1 * (roll - pitch), -g2 * (roll + pitch))``
+    """
     motor_values = joint_values.clone()
     joint_name_to_index = {name: index for index, name in enumerate(joint_names)}
 
@@ -234,11 +242,11 @@ def _replace_coupled_pairs_with_motor_values(
             raise RuntimeError(f"Unsupported coupled observation mapping: {coupling}")
 
         if pitch_name.startswith("left_ankle_"):
-            motor_1 = -float(gear_ratio_1) * (roll - pitch)
-            motor_2 = -float(gear_ratio_2) * (roll + pitch)
+            motor_1 = float(gear_ratio_1) * (roll - pitch)
+            motor_2 = float(gear_ratio_2) * (roll + pitch)
         elif pitch_name.startswith("right_ankle_"):
-            motor_1 = -float(gear_ratio_1) * (roll + pitch)
-            motor_2 = -float(gear_ratio_2) * (roll - pitch)
+            motor_1 = float(gear_ratio_1) * (roll + pitch)
+            motor_2 = float(gear_ratio_2) * (roll - pitch)
         elif pitch_name.startswith("torso_"):
             motor_1 = float(gear_ratio_1) * (roll - pitch)
             motor_2 = -float(gear_ratio_2) * (roll + pitch)
