@@ -12,14 +12,13 @@ from isaaclab.managers import RewardTermCfg as RewTerm
 from isaaclab.managers import SceneEntityCfg
 from isaaclab.utils import configclass
 
-import lab.flamingo.tasks.manager_based.locomotion.velocity.mdp as mdp
-import lab.flamingo.tasks.manager_based.locomotion.velocity.humanoid_light_env.rough_env.stand_walk.drive_rewards as mdp_walk
-from lab.flamingo.tasks.manager_based.locomotion.velocity.humanoid_light_env.velocity_env_cfg import (
+import lab.cocelo.tasks.manager_based.locomotion.velocity.mdp as mdp
+import lab.cocelo.tasks.manager_based.locomotion.velocity.humanoid_light_env.rough_env.stand_walk.drive_rewards as mdp_walk
+from lab.cocelo.tasks.manager_based.locomotion.velocity.humanoid_light_env.velocity_env_cfg import (
     CurriculumCfg,
     LocomotionVelocityRoughEnvCfg,
 )
-from lab.flamingo.assets.flamingo.humanoid_light_rev1_0_2 import HUMANOID_LIGHT_CFG  # isort: skip
-
+from lab.cocelo.assets.flamingo.humanoid_light_v1 import HUMANOID_LIGHT_CFG  # isort: skip
 
 # -----------------------------------------------------------------------------
 # Robot-specific naming (URDF)

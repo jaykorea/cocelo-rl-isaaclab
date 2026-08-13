@@ -13,13 +13,14 @@ import sys
 
 from isaaclab.app import AppLauncher
 
-# Ensure repo-local packages such as `lab.cocelo` are importable when this script is run directly.
+# Ensure repo-local packages such as `lab.cocelo_hd` are importable when this script is run directly.
 REPO_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
 if REPO_ROOT not in sys.path:
     sys.path.insert(0, REPO_ROOT)
 
 # local imports
 import cli_args  # isort: skip
+from version_check import check_rsl_rl_version  # isort: skip
 
 
 # add argparse arguments
@@ -47,6 +48,8 @@ args_cli, hydra_args = parser.parse_known_args()
 if args_cli.video:
     args_cli.enable_cameras = True
 
+installed_rsl_rl_version = check_rsl_rl_version()
+
 # clear out sys.argv for Hydra
 sys.argv = [sys.argv[0]] + hydra_args
 
@@ -54,37 +57,16 @@ sys.argv = [sys.argv[0]] + hydra_args
 app_launcher = AppLauncher(args_cli)
 simulation_app = app_launcher.app
 
-"""Check for minimum supported RSL-RL version."""
-
-import importlib.metadata as metadata
-import platform
-
-from packaging import version
-
-# for distributed training, check minimum supported rsl-rl version
-RSL_RL_VERSION = "2.2.4"
-installed_version = metadata.version("rsl-rl-lib")
-
-if args_cli.distributed and version.parse(installed_version) < version.parse(RSL_RL_VERSION):
-    if platform.system() == "Windows":
-        cmd = [r".\isaaclab.bat", "-p", "-m", "pip", "install", f"rsl-rl-lib=={RSL_RL_VERSION}"]
-    else:
-        cmd = ["./isaaclab.sh", "-p", "-m", "pip", "install", f"rsl-rl-lib=={RSL_RL_VERSION}"]
-    print(
-        f"Please install the correct version of RSL-RL.\nExisting version is: '{installed_version}'"
-        f" and required version is: '{RSL_RL_VERSION}'.\nTo install the correct version, run:"
-        f"\n\n\t{' '.join(cmd)}\n"
-    )
-    exit(1)
-
 """Rest everything follows."""
 
 import gymnasium as gym
+import inspect
 import os
 import torch
 from datetime import datetime
 
 from rsl_rl.runners import OnPolicyRunner
+from rsl_rl.utils import resolve_callable
 
 from isaaclab.envs import (
     DirectMARLEnv,
@@ -107,13 +89,34 @@ from isaaclab_tasks.utils.hydra import hydra_task_config
 
 # Import extensions to set up environment tasks
 import lab.cocelo.tasks
-import lab.cocelo.tasks.manager_based.locomotion.velocity.flamingo_light_env  # noqa: F401  TODO: import orbit.<your_extension_name>
-import lab.cocelo.tasks.manager_based.locomotion.velocity.flamingo_pro_env
 
 torch.backends.cuda.matmul.allow_tf32 = True
 torch.backends.cudnn.allow_tf32 = True
 torch.backends.cudnn.deterministic = False
 torch.backends.cudnn.benchmark = False
+
+
+def _agent_cfg_to_dict(agent_cfg: RslRlOnPolicyRunnerCfg) -> dict:
+    cfg_dict = agent_cfg.to_dict()
+    if not cfg_dict.get("obs_groups"):
+        cfg_dict["obs_groups"] = {"policy": ["policy"], "critic": ["critic"]}
+
+    alg_cfg = cfg_dict.get("algorithm")
+    if isinstance(alg_cfg, dict) and alg_cfg.get("class_name"):
+        alg_class = resolve_callable(alg_cfg["class_name"])
+        accepted_kwargs = set(inspect.signature(alg_class.__init__).parameters)
+        removed_keys = []
+        for key in list(alg_cfg):
+            if key != "class_name" and key not in accepted_kwargs:
+                removed_keys.append(key)
+                alg_cfg.pop(key)
+        if removed_keys:
+            print(
+                "[WARNING]: Removed unsupported RSL-RL algorithm config keys for installed"
+                f" rsl-rl-lib {installed_rsl_rl_version}: {', '.join(sorted(removed_keys))}"
+            )
+
+    return cfg_dict
 
 
 @hydra_task_config(args_cli.task, "rsl_rl_cfg_entry_point")
@@ -183,7 +186,7 @@ def main(env_cfg: ManagerBasedRLEnvCfg | DirectRLEnvCfg | DirectMARLEnvCfg, agen
                                              clip_actions=agent_cfg.clip_actions)
 
     # create runner from rsl-rl
-    runner = OnPolicyRunner(env, agent_cfg.to_dict(), log_dir=log_dir, device=agent_cfg.device)
+    runner = OnPolicyRunner(env, _agent_cfg_to_dict(agent_cfg), log_dir=log_dir, device=agent_cfg.device)
     # write git state to logs
     runner.add_git_repo_to_log(__file__)
     # load the checkpoint

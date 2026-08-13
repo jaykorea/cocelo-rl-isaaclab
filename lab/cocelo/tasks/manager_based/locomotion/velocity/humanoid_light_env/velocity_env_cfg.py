@@ -175,18 +175,6 @@ class ActionsCfg:
 class ObservationsCfg:
     @configclass
     class StackPolicyCfg(ObsGroup):
-        # joint_pos = ObsTerm(
-        #     func=mdp.joint_pos,
-        #     params={"asset_cfg": SIM2SIM_JOINTS_CFG},
-        #     noise=Unoise(n_min=-0.05, n_max=0.05),
-        #     scale=1.0,
-        # )
-        # joint_vel = ObsTerm(
-        #     func=mdp.joint_vel,
-        #     params={"asset_cfg": SIM2SIM_JOINTS_CFG},
-        #     noise=Unoise(n_min=-1.5, n_max=1.5),
-        #     scale=0.15,
-        # )
         joint_pos = ObsTerm(func=mdp.coupled_joint_pos_motor_space, params=COUPLED_MOTOR_OBS_PARAMS, noise=Unoise(n_min=-0.05, n_max=0.05), scale=1.0)
         joint_vel = ObsTerm(func=mdp.coupled_joint_vel_motor_space, params=COUPLED_MOTOR_OBS_PARAMS, noise=Unoise(n_min=-1.5, n_max=1.5), scale=0.05)
 
@@ -222,7 +210,7 @@ class ObservationsCfg:
     class NoneStackPolicyCfg(ObsGroup):
         velocity_commands = ObsTerm(
             func=mdp.generated_scaled_commands,
-            params={"command_name": "base_velocity", "scale": (2.0, 2.0, 1.0)},
+            params={"command_name": "base_velocity", "scale": (2.0, 1.0, 0.25)},
         )
 
         # Force-disable height scan. Current sim-to-sim policy input has no height map.
@@ -234,18 +222,6 @@ class ObservationsCfg:
 
     @configclass
     class StackCriticCfg(ObsGroup):
-        # joint_pos = ObsTerm(
-        #     func=mdp.joint_pos,
-        #     params={"asset_cfg": SIM2SIM_JOINTS_CFG},
-        #     noise=Unoise(n_min=-0.05, n_max=0.05),
-        #     scale=1.0,
-        # )
-        # joint_vel = ObsTerm(
-        #     func=mdp.joint_vel,
-        #     params={"asset_cfg": SIM2SIM_JOINTS_CFG},
-        #     noise=Unoise(n_min=-1.5, n_max=1.5),
-        #     scale=0.15,
-        # )
         joint_pos = ObsTerm(func=mdp.coupled_joint_pos_motor_space, params=COUPLED_MOTOR_OBS_PARAMS, scale=1.0)
         joint_vel = ObsTerm(func=mdp.coupled_joint_vel_motor_space, params=COUPLED_MOTOR_OBS_PARAMS, scale=0.15)
         lower_ang_vel = ObsTerm(

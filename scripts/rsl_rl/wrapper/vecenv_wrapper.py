@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import gymnasium as gym
 import torch
+from tensordict import TensorDict
 
 from isaaclab.envs import DirectRLEnv, ManagerBasedRLEnv
 from isaaclab_rl.rsl_rl.vecenv_wrapper import RslRlVecEnvWrapper
@@ -17,30 +18,11 @@ class RslRlVecEnvWrapperWithStateHandler(RslRlVecEnvWrapper):
         num_policy_stacks: int,
         num_critic_stacks: int,
         clip_actions: float | None = None,
-        update_obs_dims_in_manager: bool = True,
     ):
-        # 1) base wrapper가 __init__에서 "policy"를 읽기 전에, registry 정보를 만들어 줘야 함
-        if hasattr(env.unwrapped, "observation_manager"):
-            gdim = env.unwrapped.observation_manager.group_obs_dim
-
-            # policy를 만들 수 있는 조건일 때만 생성
-            if "policy" not in gdim and "stack_policy" in gdim and "none_stack_policy" in gdim:
-                stack_policy_dim = int(gdim["stack_policy"][0])
-                nonstack_policy_dim = int(gdim["none_stack_policy"][0])
-                tmp_policy = StateHandler(num_policy_stacks + 1, stack_policy_dim, nonstack_policy_dim)
-                gdim["policy"] = (tmp_policy.num_obs,)
-
-            # critic도 동일
-            if "critic" not in gdim and "stack_critic" in gdim and "none_stack_critic" in gdim:
-                stack_critic_dim = int(gdim["stack_critic"][0])
-                nonstack_critic_dim = int(gdim["none_stack_critic"][0])
-                tmp_critic = StateHandler(num_critic_stacks + 1, stack_critic_dim, nonstack_critic_dim)
-                gdim["critic"] = (tmp_critic.num_obs,)
-
-        # 2) 이제 base wrapper init 호출 (여기서 policy KeyError가 나면 안 됨)
         super().__init__(env, clip_actions=clip_actions)
 
-        # 3) 실제 handler 생성
+        # 실제 handler 생성. Synthetic policy/critic groups are emitted only through TensorDict,
+        # not registered into ObservationManager, so Isaac Sim's observation UI still sees only real groups.
         self.policy_state_handler = None
         self.critic_state_handler = None
 
@@ -62,13 +44,6 @@ class RslRlVecEnvWrapperWithStateHandler(RslRlVecEnvWrapper):
                     num_critic_stacks + 1, stack_critic_dim, nonstack_critic_dim
                 )
                 self.num_privileged_obs = self.critic_state_handler.num_obs
-
-            # base wrapper가 이미 읽은 값과 일관되게 유지하고 싶으면 켬
-            if update_obs_dims_in_manager:
-                if self.policy_state_handler is not None:
-                    self.unwrapped.observation_manager.group_obs_dim["policy"] = (self.num_obs,)
-                if self.critic_state_handler is not None:
-                    self.unwrapped.observation_manager.group_obs_dim["critic"] = (self.num_privileged_obs,)
 
         # base wrapper와 동일하게 초기 reset
         self.env.reset()
@@ -94,7 +69,7 @@ class RslRlVecEnvWrapperWithStateHandler(RslRlVecEnvWrapper):
             else:
                 obs_dict["critic"] = self.critic_state_handler.update(obs_dict["stack_critic"], obs_dict["none_stack_critic"])
 
-        return obs_dict["policy"], {"observations": obs_dict}
+        return TensorDict(obs_dict, batch_size=[self.num_envs])
 
     def reset(self):
         obs_dict, _ = self.env.reset()
@@ -105,7 +80,7 @@ class RslRlVecEnvWrapperWithStateHandler(RslRlVecEnvWrapper):
         if self.critic_state_handler is not None and "stack_critic" in obs_dict and "none_stack_critic" in obs_dict:
             obs_dict["critic"] = self.critic_state_handler.reset(obs_dict["stack_critic"], obs_dict["none_stack_critic"])
 
-        return obs_dict["policy"], {"observations": obs_dict}
+        return TensorDict(obs_dict, batch_size=[self.num_envs]), {"observations": obs_dict}
 
     def step(self, actions: torch.Tensor):
         # base wrapper의 contract 유지 (clip + done long)
@@ -114,15 +89,22 @@ class RslRlVecEnvWrapperWithStateHandler(RslRlVecEnvWrapper):
 
         obs_dict, rew, terminated, truncated, extras = self.env.step(actions)
         dones = (terminated | truncated).to(dtype=torch.long)
+        reset_env_ids = torch.nonzero(dones, as_tuple=False).squeeze(-1)
 
         if self.policy_state_handler is not None and "stack_policy" in obs_dict and "none_stack_policy" in obs_dict:
             obs_dict["policy"] = self.policy_state_handler.update(obs_dict["stack_policy"], obs_dict["none_stack_policy"])
+            obs_dict["policy"] = self.policy_state_handler.reset_envs(
+                reset_env_ids, obs_dict["stack_policy"], obs_dict["none_stack_policy"]
+            )
 
         if self.critic_state_handler is not None and "stack_critic" in obs_dict and "none_stack_critic" in obs_dict:
             obs_dict["critic"] = self.critic_state_handler.update(obs_dict["stack_critic"], obs_dict["none_stack_critic"])
+            obs_dict["critic"] = self.critic_state_handler.reset_envs(
+                reset_env_ids, obs_dict["stack_critic"], obs_dict["none_stack_critic"]
+            )
 
         extras["observations"] = obs_dict
         if not self.unwrapped.cfg.is_finite_horizon:
             extras["time_outs"] = truncated
 
-        return obs_dict["policy"], rew, dones, extras
+        return TensorDict(obs_dict, batch_size=[self.num_envs]), rew, dones, extras

@@ -13,13 +13,14 @@ import sys
 
 from isaaclab.app import AppLauncher
 
-# Ensure repo-local packages such as `lab.cocelo` are importable when this script is run directly.
+# Ensure repo-local packages such as `lab.cocelo_hd` are importable when this script is run directly.
 REPO_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
 if REPO_ROOT not in sys.path:
     sys.path.insert(0, REPO_ROOT)
 
 # local imports
 import cli_args  # isort: skip
+from version_check import check_rsl_rl_version  # isort: skip
 
 # add argparse arguments
 parser = argparse.ArgumentParser(description="Train an RL agent with RSL-RL.")
@@ -49,6 +50,8 @@ args_cli = parser.parse_args()
 if args_cli.video:
     args_cli.enable_cameras = True
 
+installed_rsl_rl_version = check_rsl_rl_version()
+
 # launch omniverse app
 app_launcher = AppLauncher(args_cli)
 simulation_app = app_launcher.app
@@ -56,17 +59,28 @@ simulation_app = app_launcher.app
 """Rest everything follows."""
 
 import gymnasium as gym
+import inspect
 import time
 import torch
 
 from rsl_rl.runners import OnPolicyRunner
+from rsl_rl.utils import resolve_callable
 
 from isaaclab.envs import DirectMARLEnv, multi_agent_to_single_agent
 from isaaclab.utils.assets import retrieve_file_path
 from isaaclab.utils.dict import print_dict
-from isaaclab.utils.pretrained_checkpoint import get_published_pretrained_checkpoint
+try:
+    # Older IsaacLab versions exposed this helper from isaaclab.utils.
+    from isaaclab.utils.pretrained_checkpoint import get_published_pretrained_checkpoint
+except ImportError:
+    # Newer IsaacLab versions moved it to isaaclab_rl.utils.
+    from isaaclab_rl.utils.pretrained_checkpoint import get_published_pretrained_checkpoint
 
-from isaaclab_rl.rsl_rl import RslRlOnPolicyRunnerCfg, export_policy_as_jit, export_policy_as_onnx
+from isaaclab_rl.rsl_rl import (
+    RslRlOnPolicyRunnerCfg,
+    export_policy_as_jit,
+    export_policy_as_onnx,
+)
 from wrapper.vecenv_wrapper import RslRlVecEnvWrapperWithStateHandler
 
 import isaaclab_tasks  # noqa: F401
@@ -76,8 +90,30 @@ from isaaclab_tasks.utils import get_checkpoint_path, parse_env_cfg
 
 # Import extensions to set up environment tasks
 import lab.cocelo.tasks  # noqa: F401
-import lab.cocelo.tasks.manager_based.locomotion.velocity.flamingo_light_env  # noqa: F401
-import lab.cocelo.tasks.manager_based.locomotion.velocity.flamingo_pro_env  # noqa: F401
+
+
+def _agent_cfg_to_dict(agent_cfg: RslRlOnPolicyRunnerCfg) -> dict:
+    cfg_dict = agent_cfg.to_dict()
+    if not cfg_dict.get("obs_groups"):
+        cfg_dict["obs_groups"] = {"policy": ["policy"], "critic": ["critic"]}
+
+    alg_cfg = cfg_dict.get("algorithm")
+    if isinstance(alg_cfg, dict) and alg_cfg.get("class_name"):
+        alg_class = resolve_callable(alg_cfg["class_name"])
+        accepted_kwargs = set(inspect.signature(alg_class.__init__).parameters)
+        removed_keys = []
+        for key in list(alg_cfg):
+            if key != "class_name" and key not in accepted_kwargs:
+                removed_keys.append(key)
+                alg_cfg.pop(key)
+        if removed_keys:
+            print(
+                "[WARNING]: Removed unsupported RSL-RL algorithm config keys for installed"
+                f" rsl-rl-lib {installed_rsl_rl_version}: {', '.join(sorted(removed_keys))}"
+            )
+
+    return cfg_dict
+
 
 def main():
     """Play with RSL-RL agent."""
@@ -130,7 +166,8 @@ def main():
 
     print(f"[INFO]: Loading model checkpoint from: {resume_path}")
     # load previously trained model
-    ppo_runner = OnPolicyRunner(env, agent_cfg.to_dict(), log_dir=None, device=agent_cfg.device)
+    ppo_runner = OnPolicyRunner(env, _agent_cfg_to_dict(agent_cfg), log_dir=None, device=agent_cfg.device)
+
     ppo_runner.load(resume_path)
 
     # obtain the trained policy for inference
@@ -145,17 +182,21 @@ def main():
         # version 2.2 and below
         policy_nn = ppo_runner.alg.actor_critic
 
+    normalizer = getattr(ppo_runner, "obs_normalizer", None)
+    if normalizer is None:
+        normalizer = getattr(policy_nn, "actor_obs_normalizer", None)
+
     # export policy to onnx/jit
     export_model_dir = os.path.join(os.path.dirname(resume_path), "exported")
-    export_policy_as_jit(policy_nn, ppo_runner.obs_normalizer, path=export_model_dir, filename="policy.pt")
+    export_policy_as_jit(policy_nn, normalizer, path=export_model_dir, filename="policy.pt")
     export_policy_as_onnx(
-        policy_nn, normalizer=ppo_runner.obs_normalizer, path=export_model_dir, filename="policy.onnx"
+        policy_nn, normalizer=normalizer, path=export_model_dir, filename="policy.onnx"
     )
 
     dt = env.unwrapped.step_dt
 
     # reset environment
-    obs, _ = env.get_observations()
+    obs = env.get_observations()
     timestep = 0
     # simulate environment
     while simulation_app.is_running():

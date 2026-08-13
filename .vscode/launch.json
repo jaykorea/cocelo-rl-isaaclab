@@ -1,0 +1,77 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Python: Attach (windows-x86_64/linux-x86_64)",
+            "type": "python",
+            "request": "attach",
+            "port": 3000,
+            "host": "localhost"
+        },
+        {
+            "name": "Python: Current File",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${file}",
+            "python": "/home/jay/anaconda3/envs/jh_isaaclab/bin/python",
+            "console": "integratedTerminal",
+            "envFile": "${workspaceFolder}/.vscode/.python.env"
+        },
+        {
+            "name": "[Train] - Humanoid Light Flat",
+            "type": "debugpy",
+            "request": "launch",
+            "args": [
+                "--task",
+                "Isaac-Velocity-Flat-Humanoid-Light-v1",
+                "--num_envs",
+                "4096",
+                "--headless",
+                "--num_policy_stacks",
+                "2",
+                "--num_critic_stacks",
+                "2"
+            ],
+            "env": {
+                "CUDA_VISIBLE_DEVICES": "${input:cudaDevice}"
+            },
+            "program": "${workspaceFolder}/scripts/rsl_rl/train.py",
+            "python": "/home/jay/anaconda3/envs/jh_isaaclab/bin/python",
+            "console": "integratedTerminal",
+            "envFile": "${workspaceFolder}/.vscode/.python.env",
+            "justMyCode": false
+        },
+        {
+            "name": "[Train] - Humanoid Light Rough",
+            "type": "debugpy",
+            "request": "launch",
+            "args": [
+                "--task",
+                "Isaac-Velocity-Rough-Humanoid-Light-v1",
+                "--num_envs",
+                "4096",
+                "--headless",
+                "--num_policy_stacks",
+                "2",
+                "--num_critic_stacks",
+                "2"
+            ],
+            "env": {
+                "CUDA_VISIBLE_DEVICES": "${input:cudaDevice}"
+            },
+            "program": "${workspaceFolder}/scripts/rsl_rl/train.py",
+            "python": "/home/jay/anaconda3/envs/jh_isaaclab/bin/python",
+            "console": "integratedTerminal",
+            "envFile": "${workspaceFolder}/.vscode/.python.env",
+            "justMyCode": false
+        }
+    ],
+    "inputs": [
+        {
+            "id": "cudaDevice",
+            "type": "promptString",
+            "description": "Enter CUDA_VISIBLE_DEVICES:",
+            "default": "0"
+        }
+    ]
+}

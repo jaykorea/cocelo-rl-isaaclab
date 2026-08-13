@@ -54,6 +54,18 @@ class StateHandler:
         stacked = self.get_stacked()
         return torch.cat([stacked, nonstack_obs], dim=-1)
 
+    def reset_envs(self, env_ids: torch.Tensor, stack_obs: torch.Tensor, nonstack_obs: torch.Tensor) -> torch.Tensor:
+        """
+        일부 env만 episode reset이 발생했을 때 해당 env의 stack history를 현재 관측값으로 채웁니다.
+        """
+        if self.stack_buffer is None:
+            return self.reset(stack_obs, nonstack_obs)
+        if env_ids.numel() > 0:
+            for i in range(self.total_frames):
+                self.stack_buffer[i][env_ids] = stack_obs[env_ids].clone()
+        stacked = self.get_stacked()
+        return torch.cat([stacked, nonstack_obs], dim=-1)
+
     def get_stacked(self) -> torch.Tensor:
         """
         버퍼에 저장된 stack_obs들을 concat하여 stacked 관측값을 생성합니다.
