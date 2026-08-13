@@ -1,7 +1,8 @@
 from __future__ import annotations
-from isaaclab.actuators import DelayedPDActuator
+from isaaclab.actuators import DelayedPDActuator, ImplicitActuator
 from isaaclab.utils.types import ArticulationActions
 import torch
+from typing import Sequence
 
 class GearDelayedPDActuator(DelayedPDActuator):
     """Delayed PD actuator with an additional gear ratio and gamma scaling on applied torques."""
@@ -15,10 +16,101 @@ class GearDelayedPDActuator(DelayedPDActuator):
         joint_vel = joint_vel * self.cfg.gear_ratio # OBS_{joint space} -> OBS_{motor space}
         # 먼저 DelayedPDActuator의 compute를 호출해서 delayed torque 계산
         control_action = super().compute(control_action, joint_pos, joint_vel) # motor space에서 torque 계산
-        
+
         # 여기서 gear ratio를 곱해줌
         if self.cfg.gear_ratio != 1.0:
             self.computed_effort = self.computed_effort * self.cfg.gear_ratio * self.cfg.gamma # TORQUE_{motor space} -> TORQUE_{joint space}
+            self.applied_effort = self._clip_effort(self.computed_effort)
+            control_action.joint_efforts = self.applied_effort
+
+        return control_action
+    
+class GearImplicitActuator(ImplicitActuator):
+    """Delayed PD actuator with an additional gear ratio and gamma scaling on applied torques."""
+
+    cfg: "GearImplicitActuatorCfg"
+
+    def compute(
+        self, control_action: ArticulationActions, joint_pos, joint_vel
+    ) -> ArticulationActions:
+        joint_pos = joint_pos * self.cfg.gear_ratio # OBS_{joint space} -> OBS_{motor space}
+        joint_vel = joint_vel * self.cfg.gear_ratio # OBS_{joint space} -> OBS_{motor space}
+        # 먼저 DelayedPDActuator의 compute를 호출해서 delayed torque 계산
+        control_action = super().compute(control_action, joint_pos, joint_vel) # motor space에서 torque 계산
+
+        # 여기서 gear ratio를 곱해줌
+        if self.cfg.gear_ratio != 1.0:
+            self.computed_effort = self.computed_effort * self.cfg.gear_ratio * self.cfg.gamma # TORQUE_{motor space} -> TORQUE_{joint space}
+            self.applied_effort = self._clip_effort(self.computed_effort)
+            control_action.joint_efforts = self.applied_effort
+
+        return control_action
+    
+
+class RobustGearDelayedPDActuator(DelayedPDActuator):
+    """
+    기어비(Gear Ratio) 변환과 더불어, 지연(Delay), 노이즈(Noise), 
+    로우패스 필터(LPF)의 도메인 무작위화를 모두 적용하여 실제 하드웨어의 불확실성을 정밀하게 모사하는 액추에이터.
+    """
+    cfg: "RobustGearDelayedPDActuatorCfg"
+
+    def __init__(self, cfg: "RobustGearDelayedPDActuatorCfg", *args, **kwargs):
+        super().__init__(cfg, *args, **kwargs)
+        self._prev_target_positions = None
+        self._action_lpf_alphas = torch.ones(
+            (self._num_envs, self.num_joints), dtype=torch.float, device=self._device
+        )
+        # 병목 1 제거: 매 스텝마다 getattr을 호출하지 않도록 init에서 미리 캐싱해 둡니다.
+        self._gamma = getattr(self.cfg, 'gamma', 1.0) 
+
+    def compute(
+        self, control_action: ArticulationActions, joint_pos: torch.Tensor, joint_vel: torch.Tensor
+    ) -> ArticulationActions:
+        
+        # ---------------------------------------------------------
+        # 1. Action Low-Pass Filtering (고주파 진동 억제)
+        # ---------------------------------------------------------
+        if control_action.joint_positions is not None:
+            # [추가된 안전장치] 초기화 전 compute가 호출되었거나 첫 스텝인 경우
+            if self._prev_target_positions is None:
+                # 첫 명령을 그대로 과거 버퍼에 넣어서 초기 튀는 현상(Jerk) 방지 및 None 에러 해결
+                self._prev_target_positions = control_action.joint_positions.clone()
+
+            filtered_pos = (
+                self._action_lpf_alphas * control_action.joint_positions 
+                + (1.0 - self._action_lpf_alphas) * self._prev_target_positions
+            )
+            control_action.joint_positions = filtered_pos
+            self._prev_target_positions = filtered_pos.clone()
+
+        # 2. Action Noise
+        if self.cfg.action_noise_scale > 0.0 and control_action.joint_positions is not None:
+            # in-place 덧셈으로 메모리 재할당 방지
+            control_action.joint_positions += torch.randn_like(control_action.joint_positions) * self.cfg.action_noise_scale
+
+        # 3. Encoder Noise (병목 3 해결: 불필요한 clone() 제거)
+        # 노이즈가 있을 때만 새로운 텐서를 생성(덧셈 연산)하고, 없으면 원본 뷰를 그대로 사용합니다.
+        if self.cfg.encoder_pos_noise > 0.0:
+            noisy_joint_pos = joint_pos + torch.randn_like(joint_pos) * self.cfg.encoder_pos_noise
+        else:
+            noisy_joint_pos = joint_pos 
+
+        if self.cfg.encoder_vel_noise > 0.0:
+            noisy_joint_vel = joint_vel + torch.randn_like(joint_vel) * self.cfg.encoder_vel_noise
+        else:
+            noisy_joint_vel = joint_vel
+
+        # 4. Motor Space 변환
+        motor_pos = noisy_joint_pos * self.cfg.gear_ratio 
+        motor_vel = noisy_joint_vel * self.cfg.gear_ratio 
+
+        # 5. DelayedPD 연산
+        control_action = super().compute(control_action, motor_pos, motor_vel) 
+
+        # 6. Joint Space 토크 복원
+        if self.cfg.gear_ratio != 1.0:
+            # 미리 캐싱해 둔 self._gamma 사용
+            self.computed_effort = self.computed_effort * self.cfg.gear_ratio * self._gamma
             self.applied_effort = self._clip_effort(self.computed_effort)
             control_action.joint_efforts = self.applied_effort
 

@@ -7,16 +7,18 @@ import math
 
 import isaaclab.sim as sim_utils
 from isaaclab.assets import AssetBaseCfg
+from isaaclab.managers import CurriculumTermCfg as CurrTerm
 from isaaclab.managers import RewardTermCfg as RewTerm
 from isaaclab.managers import SceneEntityCfg
 from isaaclab.utils import configclass
 
-import lab.cocelo.tasks.manager_based.locomotion.velocity.mdp as mdp
-import lab.cocelo.tasks.manager_based.locomotion.velocity.humanoid_light_env.rough_env.stand_walk.drive_rewards as mdp_walk
-from lab.cocelo.tasks.manager_based.locomotion.velocity.humanoid_light_env.velocity_env_cfg import (
+import lab.flamingo.tasks.manager_based.locomotion.velocity.mdp as mdp
+import lab.flamingo.tasks.manager_based.locomotion.velocity.humanoid_light_env.rough_env.stand_walk.drive_rewards as mdp_walk
+from lab.flamingo.tasks.manager_based.locomotion.velocity.humanoid_light_env.velocity_env_cfg import (
+    CurriculumCfg,
     LocomotionVelocityRoughEnvCfg,
 )
-from lab.cocelo.assets.flamingo.humanoid_light_v1 import HUMANOID_LIGHT_CFG  # isort: skip
+from lab.flamingo.assets.flamingo.humanoid_light_rev1_0_2 import HUMANOID_LIGHT_CFG  # isort: skip
 
 
 # -----------------------------------------------------------------------------
@@ -35,11 +37,11 @@ class HumanoidRewardsCfg:
         weight=1.5,
         params={"command_name": "base_velocity", "std": 0.25},
     )
-    track_ang_vel_z_exp = RewTerm(
-        func=mdp_walk.track_ang_vel_z_world_exp,
-        weight=1.5,
-        params={"command_name": "base_velocity", "std": 0.25},
-    )
+    # track_ang_vel_z_exp = RewTerm(
+    #     func=mdp_walk.track_ang_vel_z_world_exp,
+    #     weight=0.5,
+    #     params={"command_name": "base_velocity", "std": 0.25},
+    # )
 
     termination_penalty = RewTerm(func=mdp.is_terminated, weight=-1.0)
     keep_balance = RewTerm(func=mdp_walk.reward_keep_balance, weight=1.0)
@@ -70,26 +72,13 @@ class HumanoidRewardsCfg:
 
     joint_deviation_hip = RewTerm(
         func=mdp.joint_deviation_l1,
-        weight=-0.5,
+        weight=-0.15,
         params={"asset_cfg": SceneEntityCfg("robot", joint_names=[".*_hip_roll_joint", ".*_hip_yaw_joint"])},
-    )
-
-    joint_deviation_elbow = RewTerm(
-        func=mdp.joint_deviation_l1,
-        weight=-0.01,
-        params={
-            "asset_cfg": SceneEntityCfg(
-                "robot",
-                joint_names=[
-                    ".*_elbow_joint",
-                ],
-            )
-        },
     )
 
     joint_deviation_arms = RewTerm(
         func=mdp.joint_deviation_l1,
-        weight=-0.025,
+        weight=-0.1,
         params={
             "asset_cfg": SceneEntityCfg(
                 "robot",
@@ -97,7 +86,7 @@ class HumanoidRewardsCfg:
                     ".*_shoulder_pitch_joint",
                     ".*_shoulder_roll_joint",
                     ".*_shoulder_yaw_joint",
-                    # ".*_elbow_joint",
+                    ".*_elbow_joint",
                     ".*_wrist_joint",  
                 ],
             )
@@ -106,19 +95,10 @@ class HumanoidRewardsCfg:
 
     joint_deviation_torso = RewTerm(
         func=mdp.joint_deviation_l1,
-        weight=-1.0,
-        params={"asset_cfg": SceneEntityCfg("robot", joint_names=["torso_.*_joint"])},
+        weight=-0.3,
+        params={"asset_cfg": SceneEntityCfg("robot", joint_names=["torso_.*_joint", "head_joint"])},
     )
-    joint_deviation_head = RewTerm(
-        func=mdp.joint_deviation_l1,
-        weight=-2.0,
-        params={"asset_cfg": SceneEntityCfg("robot", joint_names=["head_joint"])},
-    )
-    joint_deviation_torso_pitch = RewTerm(
-        func=mdp.joint_deviation_l1,
-        weight=-1.5,
-        params={"asset_cfg": SceneEntityCfg("robot", joint_names=["torso_pitch_joint"])},
-    )
+
     joint_applied_torque_limits = RewTerm(
         func=mdp.applied_torque_limits,
         weight=-0.005,
@@ -176,14 +156,7 @@ class HumanoidRewardsCfg:
         },
     )
 
-    feet_crossing_lateral = RewTerm(
-        func=mdp_walk.feet_crossing_lateral_penalty,
-        weight=-2.5,
-        params={
-            "asset_cfg": SceneEntityCfg("robot", body_names=FEET_BODY_NAMES),
-            "min_width": 0.10,
-        },
-    )
+
 @configclass
 class HumanoidFlatEnvCfg(LocomotionVelocityRoughEnvCfg):
     rewards: HumanoidRewardsCfg = HumanoidRewardsCfg()
@@ -202,15 +175,15 @@ class HumanoidFlatEnvCfg(LocomotionVelocityRoughEnvCfg):
         self.observations.none_stack_policy.height_scan = None
 
         # ---------------- Events ----------------
-        self.events.reset_robot_joints.params["position_range"] = (-0.2, 0.2)
+        self.events.reset_robot_joints.params["position_range"] = (-0.1, 0.1)
 
         self.events.push_robot.interval_range_s = (10.0, 15.0)
         self.events.push_robot.params = {
-            "velocity_range": {"x": (-1.0, 1.0), "y": (-1.0, 1.0), "z": (-1.0, 1.0)},
+            "velocity_range": {"x": (-0.0, 0.0), "y": (-0.0, 0.0), "z": (-0.0, 0.0)},
         }
 
         self.events.add_base_mass.params["asset_cfg"].body_names = BASE_MASS_BODY_NAMES
-        self.events.add_base_mass.params["mass_distribution_params"] = (-3.0, 4.0)
+        self.events.add_base_mass.params["mass_distribution_params"] = (-2.0, 3.0)
 
         self.events.physics_material.params["asset_cfg"].body_names = [".*_link"]
         self.events.physics_material.params["static_friction_range"] = (0.3, 1.0)
@@ -235,10 +208,11 @@ class HumanoidFlatEnvCfg(LocomotionVelocityRoughEnvCfg):
         
         # ---------------- Commands ----------------
         self.commands.base_velocity.resampling_time_range = (3.0, 13.0)
-        self.commands.base_velocity.ranges.lin_vel_x = (-1.5, 1.5)
+        self.commands.base_velocity.ranges.lin_vel_x = (-1.0, 1.0)
         self.commands.base_velocity.ranges.lin_vel_y = (-0.0, 0.0)
-        self.commands.base_velocity.ranges.ang_vel_z = (-1.0, 1.0)
-        self.commands.base_velocity.ranges.pos_z = (0.0, 0.0) 
+        self.commands.base_velocity.ranges.ang_vel_z = (-0.0, 0.0)
+        self.commands.base_velocity.ranges.pos_z = (0.0, 0.0)
+
         # ---------------- Terminations ----------------
         self.terminations.base_contact.params["sensor_cfg"].body_names = BASE_CONTACT_BODY_NAMES
 
@@ -249,7 +223,6 @@ class HumanoidFlatEnvCfg_PLAY(HumanoidFlatEnvCfg):
         super().__post_init__()
 
         self.episode_length_s = 20.0
-        self.sim.render_interval = self.decimation
         self.scene.num_envs = 100
         self.scene.env_spacing = 2.5
         self.scene.terrain.max_init_terrain_level = None
@@ -283,7 +256,7 @@ class HumanoidFlatEnvCfg_PLAY(HumanoidFlatEnvCfg):
         self.terminations.base_contact.params["sensor_cfg"].body_names = BASE_CONTACT_BODY_NAMES
 
         self.commands.base_velocity.resampling_time_range = (3.0, 13.0)
-        self.commands.base_velocity.ranges.lin_vel_x = (-0.0, 0.0)
+        self.commands.base_velocity.ranges.lin_vel_x = (-1.0, 1.0)
         self.commands.base_velocity.ranges.lin_vel_y = (-0.0, 0.0)
         self.commands.base_velocity.ranges.ang_vel_z = (-0.0, 0.0)
-        self.commands.base_velocity.ranges.pos_z = (0.0, 0.0) 
+        self.commands.base_velocity.ranges.pos_z = (0.0, 0.0)

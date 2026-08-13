@@ -188,7 +188,7 @@ class ObservationsCfg:
         #     scale=0.15,
         # )
         joint_pos = ObsTerm(func=mdp.coupled_joint_pos_motor_space, params=COUPLED_MOTOR_OBS_PARAMS, noise=Unoise(n_min=-0.05, n_max=0.05), scale=1.0)
-        joint_vel = ObsTerm(func=mdp.coupled_joint_vel_motor_space, params=COUPLED_MOTOR_OBS_PARAMS, noise=Unoise(n_min=-1.5, n_max=1.5), scale=0.15)
+        joint_vel = ObsTerm(func=mdp.coupled_joint_vel_motor_space, params=COUPLED_MOTOR_OBS_PARAMS, noise=Unoise(n_min=-1.5, n_max=1.5), scale=0.05)
 
         lower_ang_vel = ObsTerm(
             func=mdp.body_ang_vel_link,
