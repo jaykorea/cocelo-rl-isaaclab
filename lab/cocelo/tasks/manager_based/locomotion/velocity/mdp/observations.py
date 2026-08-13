@@ -5,19 +5,16 @@
 
 from __future__ import annotations
 
-import torch
 import math
-from typing import TYPE_CHECKING
+import torch
+from typing import TYPE_CHECKING, Sequence
 
 import isaaclab.utils.math as math_utils
-from isaaclab.utils.math import wrap_to_pi
 from isaaclab.assets import Articulation, RigidObject
 from isaaclab.managers import SceneEntityCfg
-from isaaclab.sensors import RayCaster
-from isaaclab.utils.math import euler_xyz_from_quat
-from isaaclab.sensors import ContactSensor
 from isaaclab.markers import VisualizationMarkers
-from typing import Sequence
+from isaaclab.sensors import ContactSensor, RayCaster
+from isaaclab.utils.math import euler_xyz_from_quat, wrap_to_pi
 
 if TYPE_CHECKING:
     from isaaclab.envs import ManagerBasedEnv, ManagerBasedRLEnv
@@ -54,7 +51,26 @@ def base_ang_vel_link(env: ManagerBasedEnv, asset_cfg: SceneEntityCfg = SceneEnt
     # print("ang vel: ", asset.data.root_link_ang_vel_b[0, 2])
     # print("lin vel z: ", asset.data.root_link_lin_vel_b[0, 2])
     return asset.data.root_link_ang_vel_b
-        
+
+
+def body_ang_vel_link(env: ManagerBasedEnv, asset_cfg: SceneEntityCfg = SceneEntityCfg("robot")) -> torch.Tensor:
+    """Body angular velocities expressed in the selected link frames."""
+    asset: Articulation = env.scene[asset_cfg.name]
+    body_quat = asset.data.body_link_quat_w[:, asset_cfg.body_ids]
+    body_ang_vel_w = asset.data.body_link_ang_vel_w[:, asset_cfg.body_ids]
+    return math_utils.quat_apply_inverse(body_quat, body_ang_vel_w).reshape(env.num_envs, -1)
+
+
+def body_projected_gravity(
+    env: ManagerBasedEnv, asset_cfg: SceneEntityCfg = SceneEntityCfg("robot")
+) -> torch.Tensor:
+    """Gravity direction projected into the selected link frames."""
+    asset: Articulation = env.scene[asset_cfg.name]
+    body_quat = asset.data.body_link_quat_w[:, asset_cfg.body_ids]
+    gravity_dir = asset.data.GRAVITY_VEC_W.unsqueeze(1)
+    return math_utils.quat_apply_inverse(body_quat, gravity_dir).reshape(env.num_envs, -1)
+
+
 def base_pos_z_rel_link(env: ManagerBasedEnv, asset_cfg: SceneEntityCfg = SceneEntityCfg("robot"), sensor_cfg: SceneEntityCfg | None = None) -> torch.Tensor:
     """Root height in the simulation world frame."""
     # extract the used quantities (to enable type-hinting)
@@ -175,6 +191,74 @@ def joint_pos_rel_cos(env: ManagerBasedEnv, asset_cfg: SceneEntityCfg = SceneEnt
     return current_value_cos
 
 
+def coupled_joint_pos_motor_space(
+    env: ManagerBasedEnv,
+    joint_names: Sequence[str],
+    coupled_pairs: Sequence[tuple[str, str, float, float, str]],
+    asset_cfg: SceneEntityCfg = SceneEntityCfg("robot"),
+) -> torch.Tensor:
+    """Return joint positions with coupled joints expressed in motor space."""
+    asset: Articulation = env.scene[asset_cfg.name]
+    joint_pos = asset.data.joint_pos[:, asset_cfg.joint_ids]
+    return _replace_coupled_pairs_with_motor_values(joint_pos, joint_names, coupled_pairs)
+
+
+def coupled_joint_vel_motor_space(
+    env: ManagerBasedEnv,
+    joint_names: Sequence[str],
+    coupled_pairs: Sequence[tuple[str, str, float, float, str]],
+    asset_cfg: SceneEntityCfg = SceneEntityCfg("robot"),
+) -> torch.Tensor:
+    """Return joint velocities with coupled joints expressed in motor space."""
+    asset: Articulation = env.scene[asset_cfg.name]
+    joint_vel = asset.data.joint_vel[:, asset_cfg.joint_ids]
+    return _replace_coupled_pairs_with_motor_values(joint_vel, joint_names, coupled_pairs)
+
+
+def _replace_coupled_pairs_with_motor_values(
+    joint_values: torch.Tensor,
+    joint_names: Sequence[str],
+    coupled_pairs: Sequence[tuple[str, str, float, float, str]],
+) -> torch.Tensor:
+    """Replace each coupled pitch/roll pair with its corresponding motor values.
+
+    The pitch and roll slots become motor 1 and motor 2 respectively.  The
+    mappings match :class:`CoupledDelayedPDActuator`:
+
+    - left ankle: ``(g1 * (roll - pitch), g2 * (roll + pitch))``
+    - right ankle: ``(g1 * (roll + pitch), g2 * (roll - pitch))``
+    - torso: ``(g1 * (roll - pitch), -g2 * (roll + pitch))``
+    """
+    motor_values = joint_values.clone()
+    joint_name_to_index = {name: index for index, name in enumerate(joint_names)}
+
+    for pitch_name, roll_name, gear_ratio_1, gear_ratio_2, coupling in coupled_pairs:
+        pitch_id = joint_name_to_index[pitch_name]
+        roll_id = joint_name_to_index[roll_name]
+        pitch = joint_values[:, pitch_id]
+        roll = joint_values[:, roll_id]
+
+        if coupling != "roll_sum":
+            raise RuntimeError(f"Unsupported coupled observation mapping: {coupling}")
+
+        if pitch_name.startswith("left_ankle_"):
+            motor_1 = float(gear_ratio_1) * (roll - pitch)
+            motor_2 = float(gear_ratio_2) * (roll + pitch)
+        elif pitch_name.startswith("right_ankle_"):
+            motor_1 = float(gear_ratio_1) * (roll + pitch)
+            motor_2 = float(gear_ratio_2) * (roll - pitch)
+        elif pitch_name.startswith("torso_"):
+            motor_1 = float(gear_ratio_1) * (roll - pitch)
+            motor_2 = -float(gear_ratio_2) * (roll + pitch)
+        else:
+            raise RuntimeError(f"Unsupported coupled observation pair: {pitch_name}, {roll_name}")
+
+        motor_values[:, pitch_id] = motor_1
+        motor_values[:, roll_id] = motor_2
+
+    return motor_values
+
+
 def height_scan_raw(env: ManagerBasedEnv, sensor_cfg: SceneEntityCfg) -> torch.Tensor:
     """Height scan from the given sensor w.r.t. the sensor's frame.
 
@@ -184,6 +268,13 @@ def height_scan_raw(env: ManagerBasedEnv, sensor_cfg: SceneEntityCfg) -> torch.T
     sensor: RayCaster = env.scene.sensors[sensor_cfg.name]
     # height scan: height = sensor_height - hit_point_z - offset
     return sensor.data.ray_hits_w[..., 2]
+
+
+def measure_contact_forces(env: ManagerBasedRLEnv, sensor_cfg: SceneEntityCfg) -> torch.Tensor:
+    """Return net contact-force magnitudes for the selected sensor bodies."""
+    contact_sensor: ContactSensor = env.scene.sensors[sensor_cfg.name]
+    forces = contact_sensor.data.net_forces_w[:, sensor_cfg.body_ids]
+    return torch.norm(forces, dim=-1)
 
 
 def generated_partial_commands(env: ManagerBasedRLEnv, command_name: str) -> torch.Tensor:
