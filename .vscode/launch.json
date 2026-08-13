@@ -28,9 +28,9 @@
                 "4096",
                 "--headless",
                 "--num_policy_stacks",
-                "2",
+                "0",
                 "--num_critic_stacks",
-                "2"
+                "0"
             ],
             "env": {
                 "CUDA_VISIBLE_DEVICES": "${input:cudaDevice}"

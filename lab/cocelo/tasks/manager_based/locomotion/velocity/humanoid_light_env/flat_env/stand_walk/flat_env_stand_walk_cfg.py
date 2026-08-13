@@ -33,17 +33,16 @@ class HumanoidRewardsCfg:
     # -- task tracking
     track_lin_vel_xy_exp = RewTerm(
         func=mdp_walk.track_lin_vel_xy_yaw_frame_exp,
-        weight=1.5,
+        weight=3.0,
         params={"command_name": "base_velocity", "std": 0.25},
     )
-    # track_ang_vel_z_exp = RewTerm(
-    #     func=mdp_walk.track_ang_vel_z_world_exp,
-    #     weight=0.5,
-    #     params={"command_name": "base_velocity", "std": 0.25},
-    # )
+    track_ang_vel_z = RewTerm(
+        func=mdp.track_ang_vel_z_link_exp,
+        weight=1.5,
+        params={"command_name": "base_velocity", "std": math.sqrt(0.25)},
+    )
 
-    termination_penalty = RewTerm(func=mdp.is_terminated, weight=-1.0)
-    keep_balance = RewTerm(func=mdp_walk.reward_keep_balance, weight=1.0)
+    termination_penalty = RewTerm(func=mdp.is_terminated, weight=-200.0)
 
     lin_vel_z_l2 = RewTerm(func=mdp.lin_vel_z_link_l2, weight=-2.0)
     ang_vel_xy_l2 = RewTerm(func=mdp.ang_vel_xy_link_l2, weight=-0.05)
@@ -100,7 +99,7 @@ class HumanoidRewardsCfg:
 
     joint_applied_torque_limits = RewTerm(
         func=mdp.applied_torque_limits,
-        weight=-0.005,
+        weight=-0.01,
         params={"asset_cfg": SceneEntityCfg("robot", joint_names=[".*_joint"])},
     )
 
@@ -134,7 +133,7 @@ class HumanoidRewardsCfg:
         params={"asset_cfg": SceneEntityCfg("robot", joint_names=[".*_hip_.*_joint", ".*_knee_joint", ".*_ankle_.*_joint"])},
     )
 
-    action_rate_l2 = RewTerm(func=mdp.action_rate_l2, weight=-0.075)
+    action_rate_l2 = RewTerm(func=mdp.action_rate_l2, weight=-0.05)
 
     feet_slide = RewTerm(
         func=mdp.feet_slide,
