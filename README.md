@@ -66,15 +66,6 @@ iii. Unzip assets(usd asset) on folder
   python scripts/rsl_rl/train.py --task Isaac-Velocity-Flat-Flamingo-Pro-v3 --num_envs 4096 --headless --num_policy_stacks 2 --num_critic_stacks 2
   ```
 
-#### Flamingo 4W4L
-  ```
-  python scripts/rsl_rl/train.py --task Isaac-Velocity-Flat-Flamingo4w4l-v1 --num_envs 4096 --headless --num_policy_stacks 2 --num_critic_stacks 2
-  ```
-
-#### Humanoid Light
-  ```
-  python scripts/rsl_rl/train.py --task Isaac-Velocity-Flat-Humanoid-Light-v1 --num_envs 4096 --headless --num_policy_stacks 2 --num_critic_stacks 2
-  ```
 
 ### Play
 #### Flamingo Light
@@ -85,14 +76,4 @@ iii. Unzip assets(usd asset) on folder
 #### Flamingo Pro
   ```
   python scripts/rsl_rl/play.py --task Isaac-Velocity-Flat-Flamingo-Pro-Play-v3 --num_envs 64 --num_policy_stacks 2 --num_critic_stacks 2 --load_run {folder name}
-  ```
-
-#### Flamingo 4W4L
-  ```
-  python scripts/rsl_rl/play.py --task Isaac-Velocity-Flat-Flamingo4w4l-v1-Play --num_envs 64 --num_policy_stacks 2 --num_critic_stacks 2 --load_run {folder name}
-  ```
-
-#### Humanoid Light
-  ```
-  python scripts/rsl_rl/play.py --task Isaac-Velocity-Flat-Humanoid-Light-v1-Play --num_envs 64 --num_policy_stacks 2 --num_critic_stacks 2 --load_run {folder name}
   ```
